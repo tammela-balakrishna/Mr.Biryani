@@ -41,7 +41,7 @@ function Login() {
       return
     }
     const user = loginMockUser(phone)
-    const destination = location.state?.from || (user.role === 'admin' ? '/admin' : user.role === 'staff' ? '/staff/pos' : '/')
+    const destination = location.state?.from || (user.role === 'admin' ? '/admin' : user.role === 'customer' ? '/' : '/workspace')
     navigate(destination, { replace: true })
   }
 
@@ -95,8 +95,12 @@ function Login() {
           <div className="mt-6 rounded-xl border border-white/10 bg-[#080808] p-4 text-xs leading-6 text-neutral-400">
             <p className="mb-1 font-bold uppercase tracking-wider text-[#D4A63A]">Demo access · OTP 123456</p>
             <p>Customer: <strong className="text-neutral-200">9876543210</strong></p>
-            <p>Admin: <strong className="text-neutral-200">9000000001</strong></p>
-            <p>Staff: <strong className="text-neutral-200">9000000002</strong></p>
+            <p>Waiter: <strong className="text-neutral-200">9000000001</strong></p>
+            <p>Receptionist: <strong className="text-neutral-200">9000000002</strong></p>
+            <p>Captain: <strong className="text-neutral-200">9000000003</strong></p>
+            <p>Cashier: <strong className="text-neutral-200">9000000004</strong></p>
+            <p>Manager: <strong className="text-neutral-200">9000000005</strong></p>
+            <p>Admin: <strong className="text-neutral-200">9000000006</strong></p>
           </div>
 
           <p className="mt-7 text-center text-sm text-neutral-400">Don't have an account? <Link to="/register" className="font-bold text-[#D4A63A] transition hover:text-[#E8BD57]">Register with OTP</Link></p>
