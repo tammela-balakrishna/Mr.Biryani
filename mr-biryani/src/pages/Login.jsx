@@ -92,6 +92,13 @@ function Login() {
             </form>
           )}
 
+          <div className="mt-6 rounded-xl border border-white/10 bg-[#080808] p-4 text-xs leading-6 text-neutral-400">
+            <p className="mb-1 font-bold uppercase tracking-wider text-[#D4A63A]">Demo access · OTP 123456</p>
+            <p>Customer: <strong className="text-neutral-200">9876543210</strong></p>
+            <p>Admin: <strong className="text-neutral-200">9000000001</strong></p>
+            <p>Staff: <strong className="text-neutral-200">9000000002</strong></p>
+          </div>
+
           <p className="mt-7 text-center text-sm text-neutral-400">Don't have an account? <Link to="/register" className="font-bold text-[#D4A63A] transition hover:text-[#E8BD57]">Register with OTP</Link></p>
           <Link to="/" className="mt-7 flex items-center justify-center gap-2 text-xs font-semibold text-neutral-500 transition hover:text-[#D4A63A]"><ArrowLeft size={14} /> Back to Home</Link>
         </div>
