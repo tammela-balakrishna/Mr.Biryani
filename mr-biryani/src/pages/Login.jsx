@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import Brand from '../components/Brand'
 import { ArrowLeft, CheckCircle2, KeyRound, Phone, ShieldCheck } from 'lucide-react'
 import { findMockUserByPhone, isValidIndianPhone, loginMockUser, MOCK_OTP, normalizePhone, verifyMockOtp } from '../utils/mockAuth'
 
 function Login() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [phone, setPhone] = useState('')
   const [otp, setOtp] = useState('')
   const [step, setStep] = useState('phone')
@@ -40,7 +41,7 @@ function Login() {
       return
     }
     loginMockUser(phone)
-    navigate('/')
+    navigate(location.state?.from || '/', { replace: true })
   }
 
   const inputClass = 'w-full bg-transparent px-3 py-3.5 text-sm text-white outline-none placeholder:text-neutral-600'
