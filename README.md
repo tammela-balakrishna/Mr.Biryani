@@ -6,6 +6,7 @@ Restaurant ordering and management platform with a React frontend and a planned 
 
 - `mr-biryani/` — React 19 + Vite customer-facing frontend and current prototype workspaces.
 - `backend/` — Backend architecture, RBAC, data-flow diagrams and implementation plan.
+- `react-native/` — React Native mobile application specification and implementation roadmap.
 
 ## Official application roles
 
@@ -25,6 +26,7 @@ The system is designed for seven predefined roles with customizable permissions 
 - [Final RBAC specification](./backend/docs/rbac.md)
 - [Backend data-flow diagrams](./backend/docs/data-flow-diagrams.md)
 - [Frontend RBAC integration contract](./mr-biryani/docs/rbac-integration.md)
+- [React Native mobile implementation plan](./react-native/README.md)
 
 ## Important implementation status
 
