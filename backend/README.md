@@ -137,3 +137,39 @@ Razorpay, Zoho Payments and Cashfree remain candidates pending commercial and te
 ## Current implementation status
 
 Documentation and architecture only. The frontend currently contains mock OTP/localStorage demo authentication and prototype operational pages. No production backend, JWT authorization engine, PostgreSQL migrations, payment integration or secure multi-device POS is claimed complete.
+
+
+## Shared API consumers: React web and React Native
+
+This backend is the single shared application backend for both clients:
+
+- **React website:** `mr-biryani/`
+- **React Native app:** `react-native/`
+
+Both clients integrate with the same `/api/v1` API surface and PostgreSQL source of truth. They share authentication, JWT/session policy, the seven predefined roles with customizable permission mappings, branch-aware authorization, validation, business rules, order/reservation/table/billing/payment workflows, audit logging and API error contracts.
+
+### Non-negotiable integration rules
+
+1. Do not build a second mobile backend, separate database, or duplicate domain services.
+2. Do not let either client connect directly to PostgreSQL.
+3. Keep business rules, pricing/tax calculations, reservation/table allocation, order state transitions, payment verification and permission enforcement on the backend.
+4. Keep UI presentation, navigation, local transient state and device capabilities in each client.
+5. Expose client-neutral API contracts through OpenAPI; version breaking changes and maintain compatibility for supported web/mobile releases.
+6. Use the same identity and role/permission source for both clients. Client route guards improve UX only; every protected API operation must authorize server-side.
+7. Use the same idempotency, concurrency, audit and branch/ownership controls regardless of which client initiated a request.
+8. If mobile requires push notifications, printing, camera, secure storage or offline queue support, implement device-specific adapters in the mobile app and use shared backend endpoints/events for business state.
+
+Conceptual flow:
+
+```text
+React Website ───────┐
+                     ├── HTTPS /api/v1 ── Shared Node.js + Express backend
+React Native App ────┘                          │
+                                                ├── Shared auth + seven-role RBAC
+                                                ├── Shared domain modules and services
+                                                ├── PostgreSQL (source of truth)
+                                                ├── Realtime events / notifications
+                                                └── Payment provider adapters
+```
+
+See [React Native implementation specification](../react-native/README.md).
