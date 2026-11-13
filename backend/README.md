@@ -219,3 +219,19 @@ Request: `{ "message": "Do you accept table reservations?" }`
 Response: `{ "answer": "...", "sources": [{ "title": "...", "source": "...", "similarity": 0.8 }], "grounded": true }`
 
 The chatbot is informational only. It does not perform order, payment, refund or reservation mutations and does not provide live operational status. Before production, integrate the existing authentication/RBAC middleware, enforce user/branch-aware retrieval where private documents are introduced, add conversation persistence only with an explicit retention policy, and run migrations/ingestion/integration tests. Do not ingest customer PII, payment data, secrets or unapproved internal documents.
+
+
+## AI assistant / RAG — documentation only
+
+**Implementation status: planned; no backend chatbot code is included.** The RAG assistant is an architectural requirement for a future backend phase, not an available API today.
+
+The target design is documented in [RAG assistant architecture](./docs/rag-chatbot-architecture.md). It covers approved knowledge sources, ingestion and chunking, embeddings, PostgreSQL/pgvector retrieval, grounded generation, citations, safety, RBAC/branch scoping, observability and evaluation.
+
+When implementation is approved, expose a versioned API (initial proposal: `POST /api/v1/chat`) through the existing Express backend. The endpoint must:
+- Permit anonymous requests only for explicitly public restaurant information.
+- Require authentication and enforce current seven-role permissions, branch scope and ownership for private data.
+- Retrieve private order/reservation information from live authorized domain services, never from a shared vector corpus.
+- Return grounded answers with source citations and abstain when evidence is insufficient.
+- Never perform payment, refund, order, reservation or inventory mutations through generated text.
+
+No RAG route, model integration, embeddings, vector migration, ingestion worker or chatbot backend dependency is implemented at this stage. Backend implementation remains a separate future task.
