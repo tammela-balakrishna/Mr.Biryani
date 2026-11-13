@@ -78,3 +78,19 @@ These are target routes, not a claim that the pages currently exist. Do not redi
 ## Non-negotiable security boundary
 
 The frontend is not the security boundary. A modified browser can call APIs directly. All permissions, ownership, branch scope, assignment scope and business-state checks must be enforced by Express services/middleware.
+
+
+## RAG chatbot frontend integration (planned)
+
+The website chatbot is a client of the shared backend chat module; it must not call an LLM provider or vector database directly. The React Native client uses the same `/api/v1/chat` contract.
+
+- Public visitors may ask only about explicitly public menu, FAQ, policy and branch content.
+- Signed-in Customers may request their own order/reservation information only through backend-authorized live domain services.
+- Staff assistance must be limited by the same seven-role permissions, branch scope and assignment scope as the operational UI.
+- Admin knowledge-management UI requires explicit `chat.knowledge.read`, `chat.knowledge.manage` and `chat.knowledge.publish` permissions.
+- Render source citations, loading/streaming, retry, empty/unknown-answer, error and feedback states.
+- Do not treat hidden UI controls as authorization; every chat endpoint and tool call is checked server-side.
+- Do not expose provider keys, embeddings, internal prompts, other users' conversations or raw retrieved private records to the browser.
+- Initial UI scope is read-only. No generated response may trigger order placement, table allocation, payment, refund or inventory mutation.
+
+This is a target integration contract, not an implemented chatbot component. See [RAG chatbot architecture](../../backend/docs/rag-chatbot-architecture.md).
