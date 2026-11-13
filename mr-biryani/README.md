@@ -1,16 +1,21 @@
-# React + Vite
+# Mr. BIRIYANI — React Website
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19 + Vite customer website and staff/admin workspaces.
 
-Currently, two official plugins are available:
+## Run the frontend
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+cp .env.example .env
+npm run dev
+```
 
-## React Compiler
+Set `VITE_API_BASE_URL` to the shared backend API base URL, for example `http://localhost:4000/api/v1`.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## RAG assistant
 
-## Expanding the ESLint configuration
+The floating assistant is mounted across non-authentication pages through `src/components/ChatbotWidget.jsx`. It sends questions to `POST /api/v1/chat` on the shared backend and displays answer source titles. It does not call an LLM provider directly and contains no model API key.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+The assistant is informational only. It cannot place orders, modify reservations, access private customer records, or confirm live operational/payment status. The backend must be running with pgvector migrated, an OpenAI API key configured, and approved knowledge files ingested.
+
+See [backend RAG setup](../backend/README.md#rag-chatbot-initial-implementation).
