@@ -12,6 +12,7 @@
 6. [Level 2 — Reservation workflow](#level-2--reservation-workflow)
 7. [Level 2 — Payment workflow](#level-2--payment-workflow)
 8. [Level 2 — Branch and resource authorization](#level-2--branch-and-resource-authorization)
+9. [Level 2 — RAG assistant query and ingestion](#level-2--rag-assistant-query-and-ingestion)
 
 ## Level 0 — System context
 
@@ -318,3 +319,58 @@ Global access is reserved for explicitly authorized Admin operations. Manager re
 8. Implement Manager reporting, inventory and expenses.
 9. Integrate frontend role-aware workspaces and API authorization context.
 10. Complete security, concurrency, integration and production-readiness tests.
+
+
+## Level 2 — RAG assistant query and ingestion
+
+**Planned flow only; no chatbot services or vector index are implemented yet.**
+
+### Query flow
+
+```mermaid
+flowchart TD
+    WEB[React Website] --> API[POST /api/v1/chat/sessions/:id/messages]
+    MOB[React Native App] --> API
+    API --> AUTH[Authenticate or allow public-only mode]
+    AUTH --> RATE[Rate limit and validate input]
+    RATE --> INTENT[Classify intent and data sensitivity]
+    INTENT -->|Public FAQ/menu/policy| EMBED[Create query embedding]
+    EMBED --> RETRIEVE[Hybrid retrieval with visibility/locale/branch filters]
+    RETRIEVE <--> VDB[(PostgreSQL + pgvector knowledge chunks)]
+    RETRIEVE --> RERANK[Optional bounded reranking]
+    INTENT -->|Private order/reservation status| DOMAIN[Authorized live domain service]
+    DOMAIN --> SCOPE[Enforce user ownership, branch and assignment]
+    SCOPE --> CONTEXT[Permitted context only]
+    RERANK --> CONTEXT
+    CONTEXT --> LLM[LLM provider adapter]
+    LLM --> GROUND[Ground answer and attach source citations]
+    GROUND --> RESP[Response / optional SSE stream]
+    RESP --> WEB
+    RESP --> MOB
+    API --> LOG[Privacy-minimized metrics, feedback and audit]
+    GROUND --> LOG
+```
+
+### Knowledge ingestion flow
+
+```mermaid
+flowchart TD
+    ADMIN[Authorized Admin / Content Publisher] --> SOURCE[Approved FAQ, menu, policy and branch sources]
+    SOURCE --> NORMALIZE[Normalize text and metadata]
+    NORMALIZE --> CHUNK[Semantic chunking and content hash]
+    CHUNK --> EMB[Embedding provider adapter]
+    EMB --> INDEX[(PostgreSQL + pgvector)]
+    INDEX --> EVAL[Retrieval and grounding evaluation]
+    EVAL -->|Approved| PUBLISH[Publish version]
+    EVAL -->|Rejected| HOLD[Hold for correction]
+    PUBLISH --> RETRIEVE[Available to filtered retrieval]
+```
+
+### RAG safety boundaries
+
+- Retrieved text is untrusted context, not executable instructions.
+- Apply authorization filters before retrieval results reach the model; prompt wording is not an access-control mechanism.
+- Private order/reservation data is fetched live through the domain service and owner-scoped, never from the general vector index.
+- First release exposes no mutating tools. Model output cannot create orders, allocate tables, collect payments or issue refunds.
+- Only approved, versioned sources can be published; deletions/expiry must deactivate stale chunks.
+- Both clients use the same chat API and permission policy.
