@@ -31,3 +31,8 @@ The system is designed for seven predefined roles with customizable permissions 
 ## Important implementation status
 
 The frontend currently includes prototype/mock authentication and browser-local demo data. This is not production authentication or secure RBAC. The backend and production authorization system remain planned work; see the implementation roadmap before treating any workflow as production-ready.
+
+
+## Shared backend architecture
+
+The React website (`mr-biryani/`) and React Native mobile application (`react-native/`) are two clients of the **same backend** in `backend/`. Both use the same versioned HTTPS API, PostgreSQL database, authentication/session lifecycle, seven-role RBAC permission model, branch/ownership policies and business workflows. Do not create a separate backend, database, authentication system or duplicate business rules for mobile. Client-specific UI and device integrations belong in their respective frontend applications; authorization and business invariants are enforced by the shared backend.
