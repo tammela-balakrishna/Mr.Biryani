@@ -1,5 +1,3 @@
-import { getOrdersForUser } from './mockOrders'
-
 const TABLES_KEY='mr-biriyani-demo-tables'
 const read=(key,fallback)=>{try{const value=JSON.parse(localStorage.getItem(key)||'null');return value??fallback}catch{return fallback}}
 const write=(key,value)=>localStorage.setItem(key,JSON.stringify(value))
