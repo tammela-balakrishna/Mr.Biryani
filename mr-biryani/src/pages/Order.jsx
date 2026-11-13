@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 
 import { createOrder, saveOrder } from '../data/orderData'
+import { getCurrentUser } from '../utils/auth'
 
 const categories = ['All', 'Chicken', 'Mutton', 'Special']
 
@@ -82,14 +83,14 @@ const formatPrice = (price) =>
   }).format(price)
 
 function Order() {
+  const currentUser = getCurrentUser()
   const [activeCategory, setActiveCategory] = useState('All')
   const [cart, setCart] = useState({})
   const [placedOrder, setPlacedOrder] = useState(null)
   const [orderPlaced, setOrderPlaced] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
-
   const [customer, setCustomer] = useState({
-    name: '',
+    name: currentUser?.name || '',
     phone: '',
     address: '',
   })
@@ -131,6 +132,7 @@ function Order() {
       ...previous,
       [id]: (previous[id] || 0) + 1,
     }))
+
     resetOrderMessage()
   }
 
@@ -167,6 +169,8 @@ function Order() {
       ...previous,
       [name]: value,
     }))
+
+    setErrorMessage('')
   }
 
   const handleSubmit = (event) => {
@@ -194,15 +198,23 @@ function Order() {
     }
 
     try {
-      const orderData = createOrder({
-        customer: {
-          name: customer.name.trim(),
-          phone: customer.phone.trim(),
-          address: customer.address.trim(),
-        },
-        cartItems,
-        subtotal,
-      })
+      const currentUser = getCurrentUser()
+
+      if (!currentUser?.email) {
+        setErrorMessage('Please log in again before placing your order.')
+        return
+      }
+
+const orderData = createOrder({
+  customer: {
+    name: customer.name.trim(),
+    email: currentUser.email,
+    phone: customer.phone.trim(),
+    address: customer.address.trim(),
+  },
+  cartItems,
+  subtotal,
+})
 
       saveOrder(orderData)
 
@@ -212,7 +224,7 @@ function Order() {
     } catch (error) {
       console.error('Unable to save order:', error)
       setErrorMessage(
-        'Unable to save your order. Please try again.',
+        error.message || 'Unable to save your order. Please try again.',
       )
     }
   }
@@ -280,12 +292,8 @@ function Order() {
             />
 
             <div className="absolute -bottom-4 -left-2 rounded-xl border border-[#FFC107]/30 bg-[#160b06] px-5 py-3 shadow-xl">
-              <p className="text-xs text-neutral-400">
-                Authentic Taste
-              </p>
-              <p className="font-bold text-[#FFC107]">
-                Made with Passion
-              </p>
+              <p className="text-xs text-neutral-400">Authentic Taste</p>
+              <p className="font-bold text-[#FFC107]">Made with Passion</p>
             </div>
           </div>
         </div>
@@ -516,14 +524,12 @@ function Order() {
 
             <h2 className="text-3xl font-extrabold leading-tight">
               Complete Your
-              <span className="block text-[#FFC107]">
-                Order Details
-              </span>
+              <span className="block text-[#FFC107]">Order Details</span>
             </h2>
 
             <p className="mt-5 max-w-md text-sm leading-7 text-neutral-400">
-              Enter your details to save your order and view it in
-              your order history.
+              Enter your delivery details to save your order and view
+              it in your order history.
             </p>
 
             <div className="mt-9 space-y-5">
@@ -533,9 +539,7 @@ function Order() {
                 </div>
 
                 <div>
-                  <p className="font-semibold">
-                    Authentic Andhra Cuisine
-                  </p>
+                  <p className="font-semibold">Authentic Andhra Cuisine</p>
                   <p className="mt-1 text-xs text-neutral-500">
                     Rich flavours and aromatic spices
                   </p>
@@ -581,7 +585,10 @@ function Order() {
             </h3>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-neutral-300">
+              <label
+                htmlFor="customer-name"
+                className="mb-2 block text-sm font-medium text-neutral-300"
+              >
                 Full Name
               </label>
 
@@ -589,18 +596,23 @@ function Order() {
                 <User size={18} className="text-[#FFC107]" />
 
                 <input
+                  id="customer-name"
                   required
                   name="name"
                   value={customer.name}
                   onChange={handleCustomerChange}
                   placeholder="Enter your name"
+                  autoComplete="name"
                   className="w-full bg-transparent px-3 py-3.5 text-sm text-white outline-none placeholder:text-neutral-600"
                 />
               </div>
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-neutral-300">
+              <label
+                htmlFor="customer-phone"
+                className="mb-2 block text-sm font-medium text-neutral-300"
+              >
                 Phone Number
               </label>
 
@@ -608,6 +620,7 @@ function Order() {
                 <Phone size={18} className="text-[#FFC107]" />
 
                 <input
+                  id="customer-phone"
                   required
                   type="tel"
                   name="phone"
@@ -615,6 +628,8 @@ function Order() {
                   onChange={handleCustomerChange}
                   pattern="[6-9][0-9]{9}"
                   maxLength={10}
+                  inputMode="numeric"
+                  autoComplete="tel"
                   placeholder="10-digit mobile number"
                   className="w-full bg-transparent px-3 py-3.5 text-sm text-white outline-none placeholder:text-neutral-600"
                 />
@@ -622,7 +637,10 @@ function Order() {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-neutral-300">
+              <label
+                htmlFor="customer-address"
+                className="mb-2 block text-sm font-medium text-neutral-300"
+              >
                 Delivery Address
               </label>
 
@@ -630,11 +648,13 @@ function Order() {
                 <MapPin size={18} className="mt-4 text-[#FFC107]" />
 
                 <textarea
+                  id="customer-address"
                   required
                   name="address"
                   value={customer.address}
                   onChange={handleCustomerChange}
                   rows={3}
+                  autoComplete="street-address"
                   placeholder="Enter your complete delivery address"
                   className="w-full resize-none bg-transparent px-3 py-3.5 text-sm text-white outline-none placeholder:text-neutral-600"
                 />
@@ -643,14 +663,20 @@ function Order() {
 
             {/* ERROR MESSAGE */}
             {errorMessage && (
-              <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-400">
+              <div
+                role="alert"
+                className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-400"
+              >
                 {errorMessage}
               </div>
             )}
 
             {/* SUCCESS MESSAGE */}
             {orderPlaced && placedOrder && (
-              <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-400">
+              <div
+                role="status"
+                className="rounded-lg border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-400"
+              >
                 <div className="flex items-center gap-2 font-bold">
                   <CheckCircle2 size={20} />
                   Order Saved Successfully!
@@ -660,8 +686,7 @@ function Order() {
                   <p>Order ID: {placedOrder.orderId}</p>
                   <p>Customer: {placedOrder.customer.name}</p>
                   <p>
-                    Total:{' '}
-                    {formatPrice(placedOrder.pricing.total)}
+                    Total: {formatPrice(placedOrder.pricing.total)}
                   </p>
                   <p>Status: {placedOrder.orderStatus}</p>
                 </div>

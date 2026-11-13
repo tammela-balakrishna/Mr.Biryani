@@ -6,7 +6,6 @@ import Footer from './components/Footer'
 import ScrollToTop from './components/ScrollToTop'
 import ProtectedRoute from './components/ProtectedRoute'
 
-
 import Home from './pages/Home'
 import Menu from './pages/Menu'
 import About from './pages/About'
@@ -17,8 +16,7 @@ import Reviews from './pages/Reviews'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Contact from './pages/Contact'
-
-
+import ForgotPassword from './pages/ForgotPassword'
 
 function NotFound() {
   return (
@@ -56,33 +54,48 @@ function App() {
   const location = useLocation()
 
   return (
-      
     <div className="flex min-h-screen flex-col bg-[#080808] text-white">
       <ScrollToTop />
+
       <Navbar />
 
-      <div key={location.pathname} className="flex-1 animate-fade-up">
+      <div
+        key={location.pathname}
+        className="flex-1 animate-fade-up"
+      >
         <Routes>
-           
+          {/* Public routes */}
           <Route path="/" element={<Home />} />
           <Route path="/menu" element={<Menu />} />
           <Route path="/about" element={<About />} />
           <Route path="/gallery" element={<Gallery />} />
-          <Route path="/order" element={<Order />} />
-          <Route path="/order-history" element={<OrderHistory />} />
           <Route path="/reviews" element={<Reviews />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/contact" element={<Contact />} />
-          <Route path="*" element={<NotFound />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+
+          {/* Protected routes */}
           <Route
-  path="/order-history"
-  element={
-    <ProtectedRoute>
-      <OrderHistory />
-    </ProtectedRoute>
-  }
-/>
+            path="/order"
+            element={
+              <ProtectedRoute>
+                <Order />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/order-history"
+            element={
+              <ProtectedRoute>
+                <OrderHistory />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* 404 route */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
 

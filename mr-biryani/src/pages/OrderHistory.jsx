@@ -1,4 +1,5 @@
-
+import { getOrdersByEmail } from '../data/orderData'
+import { getCurrentUser } from '../utils/auth'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
@@ -108,12 +109,14 @@ const formatDate = (date) => {
   })
 }
 
-const loadOrders = () => {
+const loadOrders = (email) => {
   try {
-    const result = getOrders()
+    if (!email) return []
+
+    const result = getOrdersByEmail(email)
     return Array.isArray(result) ? result : []
   } catch (error) {
-    console.error('Unable to load orders:', error)
+    console.error('Unable to load customer orders:', error)
     return []
   }
 }
@@ -206,7 +209,12 @@ function OrderProgress({ status }) {
 }
 
 function OrderHistory() {
-  const [orders, setOrders] = useState(loadOrders)
+const currentUser = getCurrentUser()
+
+  const [orders, setOrders] = useState(() =>
+    loadOrders(currentUser?.email)
+  )
+
   const [activeFilter, setActiveFilter] = useState('All Orders')
   const [search, setSearch] = useState('')
   const [expandedOrder, setExpandedOrder] = useState(null)
@@ -267,9 +275,9 @@ function OrderHistory() {
       )
   }, [orders, activeFilter, search])
 
-  const refreshOrders = () => {
-    setOrders(loadOrders())
-  }
+const refreshOrders = () => {
+  setOrders(loadOrders(currentUser?.email))
+}
 
   return (
     <main className="min-h-screen bg-[#0b0705] text-white">

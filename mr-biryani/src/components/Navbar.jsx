@@ -1,15 +1,23 @@
 
 import { useEffect, useState } from 'react'
-import { Link, NavLink, useLocation } from 'react-router-dom'
+import {
+  Link,
+  NavLink,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom'
 import {
   Menu as MenuIcon,
   X,
   ChevronRight,
   ShoppingBag,
   UserRound,
+  LogOut,
+  ClipboardList,
 } from 'lucide-react'
 
 import Brand from './Brand'
+import { getCurrentUser, logoutUser } from '../utils/auth'
 
 const navLinks = [
   { name: 'Home', path: '/' },
@@ -22,13 +30,24 @@ const navLinks = [
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
+  const [currentUser, setCurrentUser] = useState(() => getCurrentUser())
+
   const location = useLocation()
+  const navigate = useNavigate()
 
   const closeMenu = () => setIsOpen(false)
 
   useEffect(() => {
     setIsOpen(false)
+    setCurrentUser(getCurrentUser())
   }, [location.pathname, location.hash])
+
+  const handleLogout = () => {
+    logoutUser()
+    setCurrentUser(null)
+    closeMenu()
+    navigate('/', { replace: true })
+  }
 
   const linkStyle = ({ isActive }) =>
     `group relative whitespace-nowrap py-2 text-xs font-semibold tracking-wide transition-colors duration-200 ${
@@ -88,33 +107,61 @@ function Navbar() {
 
         {/* Desktop Actions */}
         <div className="hidden shrink-0 items-center gap-3 md:flex">
-          {/* Login */}
-          <Link
-            to="/login"
-            aria-label="Login"
-            title="Login"
-            className="rounded-lg p-2 text-white transition hover:bg-white/10 hover:text-[#FFD000]"
-          >
-            <UserRound size={19} />
-          </Link>
+          {currentUser ? (
+            <>
+              <Link
+                to="/order-history"
+                aria-label="My Orders"
+                title="My Orders"
+                className="rounded-lg p-2 text-white transition hover:bg-white/10 hover:text-[#FFD000]"
+              >
+                <ClipboardList size={19} />
+              </Link>
 
-          {/* Shopping Cart */}
-          <Link
-            to="/order"
-            aria-label="Shopping cart"
-            title="Shopping cart"
-            className="rounded-lg p-2 text-white transition hover:bg-white/10 hover:text-[#FFD000]"
-          >
-            <ShoppingBag size={20} />
-          </Link>
+              <Link
+                to="/order"
+                aria-label="Shopping cart"
+                title="Shopping cart"
+                className="rounded-lg p-2 text-white transition hover:bg-white/10 hover:text-[#FFD000]"
+              >
+                <ShoppingBag size={20} />
+              </Link>
 
-          {/* Order Now */}
-          <Link
-            to="/order"
-            className="inline-flex items-center justify-center rounded-lg bg-[#FFD000] px-5 py-2.5 text-xs font-extrabold text-black shadow-md shadow-yellow-500/10 transition-all duration-300 hover:-translate-y-0.5 hover:bg-yellow-300"
-          >
-            Order Now
-          </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-4 py-2.5 text-xs font-bold text-white transition hover:border-red-400/50 hover:bg-red-500/10 hover:text-red-400"
+              >
+                <LogOut size={16} />
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                aria-label="Login"
+                title="Login"
+                className="rounded-lg p-2 text-white transition hover:bg-white/10 hover:text-[#FFD000]"
+              >
+                <UserRound size={19} />
+              </Link>
+
+              <Link
+                to="/register"
+                className="rounded-lg border border-white/15 px-4 py-2.5 text-xs font-bold text-white transition hover:border-[#FFD000] hover:text-[#FFD000]"
+              >
+                Register
+              </Link>
+
+              <Link
+                to="/order"
+                className="inline-flex items-center justify-center rounded-lg bg-[#FFD000] px-5 py-2.5 text-xs font-extrabold text-black shadow-md shadow-yellow-500/10 transition-all duration-300 hover:-translate-y-0.5 hover:bg-yellow-300"
+              >
+                Order Now
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -154,32 +201,66 @@ function Navbar() {
             ))}
 
             <div className="mt-3 grid grid-cols-2 gap-3 border-t border-white/10 pt-4">
-              <Link
-                to="/login"
-                onClick={closeMenu}
-                className="flex items-center justify-center gap-2 rounded-lg border border-white/20 py-3 text-sm font-semibold text-white transition hover:border-[#FFD000] hover:text-[#FFD000]"
-              >
-                <UserRound size={17} />
-                Login
-              </Link>
+              {currentUser ? (
+                <>
+                  <Link
+                    to="/order-history"
+                    onClick={closeMenu}
+                    className="flex items-center justify-center gap-2 rounded-lg border border-white/20 py-3 text-sm font-semibold text-white transition hover:border-[#FFD000] hover:text-[#FFD000]"
+                  >
+                    <ClipboardList size={17} />
+                    My Orders
+                  </Link>
 
+                  <Link
+                    to="/order"
+                    onClick={closeMenu}
+                    className="flex items-center justify-center gap-2 rounded-lg border border-white/20 py-3 text-sm font-semibold text-white transition hover:border-[#FFD000] hover:text-[#FFD000]"
+                  >
+                    <ShoppingBag size={17} />
+                    Cart
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    onClick={closeMenu}
+                    className="flex items-center justify-center gap-2 rounded-lg border border-white/20 py-3 text-sm font-semibold text-white transition hover:border-[#FFD000] hover:text-[#FFD000]"
+                  >
+                    <UserRound size={17} />
+                    Login
+                  </Link>
+
+                  <Link
+                    to="/register"
+                    onClick={closeMenu}
+                    className="flex items-center justify-center gap-2 rounded-lg border border-white/20 py-3 text-sm font-semibold text-white transition hover:border-[#FFD000] hover:text-[#FFD000]"
+                  >
+                    Register
+                  </Link>
+                </>
+              )}
+            </div>
+
+            {currentUser ? (
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-bold text-red-400 transition hover:bg-red-500/20"
+              >
+                <LogOut size={17} />
+                Logout
+              </button>
+            ) : (
               <Link
                 to="/order"
                 onClick={closeMenu}
-                className="flex items-center justify-center gap-2 rounded-lg border border-white/20 py-3 text-sm font-semibold text-white transition hover:border-[#FFD000] hover:text-[#FFD000]"
+                className="mt-2 rounded-lg bg-[#FFD000] px-4 py-3 text-center text-sm font-bold text-black transition hover:bg-yellow-300"
               >
-                <ShoppingBag size={17} />
-                Cart
+                Order Now
               </Link>
-            </div>
-
-            <Link
-              to="/order"
-              onClick={closeMenu}
-              className="mt-2 rounded-lg bg-[#FFD000] px-4 py-3 text-center text-sm font-bold text-black transition hover:bg-yellow-300"
-            >
-              Order Now
-            </Link>
+            )}
           </div>
         </div>
       </div>

@@ -4,9 +4,9 @@ import { getCurrentUser } from '../utils/auth'
 
 function ProtectedRoute({ children }) {
   const location = useLocation()
-  const user = getCurrentUser()
+  const currentUser = getCurrentUser()
 
-  if (!user) {
+  if (!currentUser) {
     return (
       <Navigate
         to="/login"
