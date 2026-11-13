@@ -27,6 +27,7 @@ The system is designed for seven predefined roles with customizable permissions 
 - [Backend data-flow diagrams](./backend/docs/data-flow-diagrams.md)
 - [Frontend RBAC integration contract](./mr-biryani/docs/rbac-integration.md)
 - [React Native mobile implementation plan](./react-native/README.md)
+- [RAG chatbot architecture and rollout plan](./backend/docs/rag-chatbot-architecture.md)
 
 ## Important implementation status
 
@@ -36,3 +37,8 @@ The frontend currently includes prototype/mock authentication and browser-local 
 ## Shared backend architecture
 
 The React website (`mr-biryani/`) and React Native mobile application (`react-native/`) are two clients of the **same backend** in `backend/`. Both use the same versioned HTTPS API, PostgreSQL database, authentication/session lifecycle, seven-role RBAC permission model, branch/ownership policies and business workflows. Do not create a separate backend, database, authentication system or duplicate business rules for mobile. Client-specific UI and device integrations belong in their respective frontend applications; authorization and business invariants are enforced by the shared backend.
+
+
+## AI assistant (planned)
+
+The product roadmap includes a **RAG-powered restaurant assistant** for the React website and React Native app. Both clients will use one shared `/api/v1/chat` backend module, approved restaurant knowledge, PostgreSQL with pgvector, provider adapters, source citations and the existing seven-role RBAC/branch/ownership policies. Initial scope is read-only menu, FAQ, restaurant policy and public branch information. Private order/reservation lookups must use authenticated domain services; the assistant must not execute payments, refunds or other transactions from generated text. This is a planned feature, not implemented functionality. See [RAG chatbot architecture](./backend/docs/rag-chatbot-architecture.md).
