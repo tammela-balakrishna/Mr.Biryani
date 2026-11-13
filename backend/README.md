@@ -75,6 +75,7 @@ The frontend integration contract is documented in [Frontend RBAC integration](.
 | Inventory and expenses | Stock movements, purchasing and expense controls |
 | Reports | Branch-scoped sales, revenue and staff performance |
 | Audit/notifications | Append-only audit trail and operational notifications |
+| AI assistant / RAG | Approved knowledge ingestion, pgvector retrieval, grounded responses, citations, feedback and role-scoped read-only tools |
 
 The existing restaurant ER diagram must be reviewed before finalizing physical schema, foreign keys and migrations.
 
@@ -106,6 +107,8 @@ All endpoints are under `/api/v1`; exact methods, payloads, pagination and respo
 - `/inventory`, `/expenses`: stock and expense operations.
 - `/reports`: branch-scoped management reporting.
 - `/admin/roles`, `/admin/permissions`, `/admin/settings`: Admin-only system configuration.
+- `/chat`: shared conversation/session/message APIs, citations and feedback; authenticated private lookups remain owner/branch/assignment scoped.
+- Admin knowledge-management APIs: source registration, ingestion, publish/rollback and evaluation; require explicit chatbot knowledge permissions.
 
 Every protected route must declare required permission(s), branch policy and resource policy.
 
@@ -122,7 +125,9 @@ Every protected route must declare required permission(s), branch policy and res
 9. Implement cashier billing, split payments, receipts, refunds and payment adapter.
 10. Implement Manager reports, inventory and expenses.
 11. Integrate frontend sessions, permissions, branch context and role-specific workspaces.
-12. Complete security, concurrency, integration, load and production-readiness testing.
+12. Implement the RAG knowledge pipeline, pgvector retrieval, model adapter, grounded chat API and admin publishing controls.
+13. Integrate the shared chat API into React web and React Native clients.
+14. Complete security, concurrency, RAG evaluation, integration, load and production-readiness testing.
 
 ## Payment provider
 
@@ -173,3 +178,17 @@ React Native App ────┘                          │
 ```
 
 See [React Native implementation specification](../react-native/README.md).
+
+
+## RAG assistant (planned; not implemented)
+
+See [RAG chatbot architecture](./docs/rag-chatbot-architecture.md) for the complete pipeline, API proposal, schema, security model, evaluation strategy and phased rollout. Key decisions:
+
+- One shared Express chat module serves web and mobile; no separate AI backend per client.
+- PostgreSQL + pgvector is the initial vector store, subject to extension/version verification and benchmark results.
+- Ingest only approved, versioned restaurant knowledge (FAQs, policies, menu and verified allergen/branch information).
+- Use embedding and LLM provider adapters; keep credentials server-side.
+- Enforce public/private visibility, branch and role scopes before retrieval and tool calls.
+- Use live authorized domain services for a customer's own order/reservation status; never vector-index private operational records.
+- Initial assistant is read-only and cites sources. No autonomous order, payment, refund, reservation or inventory mutation.
+- Track retrieval quality, groundedness, citation coverage, latency, token cost, feedback and safety regressions.
