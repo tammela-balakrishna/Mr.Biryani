@@ -461,3 +461,23 @@ React Native App ────┘                       │
                                              ├── Billing / payments / inventory
                                              └── Realtime events / notifications
 ```
+
+
+## RAG chatbot integration (planned)
+
+The mobile app will expose a native chat screen backed by the **same shared `/api/v1/chat` module** used by the React website. Do not add a separate mobile LLM integration, vector database or chatbot backend.
+
+- Initial customer experience: menu questions, verified ingredient/spice/allergen details, restaurant FAQs, policies and public branch information.
+- Use the common conversation/message API, source citations, feedback and optional server-sent event streaming contract.
+- Public users receive public knowledge only. Signed-in customers can request their own order/reservation status only through authenticated live backend services.
+- Staff-facing help must respect the existing seven roles and branch/assignment permissions. Admin knowledge publishing remains permission-gated.
+- Keep chat history in server-owned sessions; local cache must be treated as disposable and privacy-aware.
+- Show source references, uncertainty/unknown answers, retry/offline states and a way to report poor answers.
+- Do not expose model keys or connect directly to PostgreSQL/pgvector.
+- First release is read-only; generated text cannot place orders, reserve tables, collect payments, issue refunds or change inventory.
+
+Suggested feature folder: `src/features/chat/` with screen/components, typed API hooks, message list, composer, citation renderer and feedback controls. Keep retrieval, embeddings, model prompts and authorization entirely on the backend.
+
+Implementation phases: shared API contract → chat UI shell → public FAQ/menu pilot → authenticated owner-scoped status tools → evaluation and staged rollout. Full backend architecture, schema proposal, threat model and acceptance criteria: [RAG chatbot architecture](../backend/docs/rag-chatbot-architecture.md).
+
+**Status:** specification only. No mobile chat screen or RAG backend is claimed implemented.
