@@ -8,7 +8,7 @@ import { embedText } from '../src/services/ragService.js';
 const root = fileURLToPath(new URL('../knowledge/', import.meta.url));
 const vector = (values) => `[${values.join(',')}]`;
 const chunkText = (text, size = 900, overlap = 120) => {
-  const clean = text.replace(/\\r/g, '').trim();
+  const clean = text.replace(/\r/g, '').trim();
   const chunks = [];
   for (let start = 0; start < clean.length; start += size - overlap) {
     const part = clean.slice(start, start + size).trim();
@@ -23,7 +23,7 @@ async function walk(dir) {
   for (const entry of entries) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) files.push(...await walk(full));
-    else if (entry.isFile() && /\\.(md|txt)$/i.test(entry.name)) files.push(full);
+    else if (entry.isFile() && /\.(md|txt)$/i.test(entry.name)) files.push(full);
   }
   return files;
 }
@@ -32,9 +32,9 @@ try {
   const files = await walk(root);
   for (const file of files) {
     const text = await readFile(file, 'utf8');
-    const title = text.match(/^#\\s+(.+)$/m)?.[1] ?? path.basename(file);
+    const title = text.match(/^#\s+(.+)$/m)?.[1] ?? path.basename(file);
     for (const chunk of chunkText(text)) {
-      const hash = createHash('sha256').update(`${file}\\n${chunk}`).digest('hex');
+      const hash = createHash('sha256').update(`${file}\n${chunk}`).digest('hex');
       const embedding = await embedText(chunk);
       await pool.query(
         `INSERT INTO knowledge_chunks (title, source, content, content_hash, embedding)
