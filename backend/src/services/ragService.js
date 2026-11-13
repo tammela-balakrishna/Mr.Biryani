@@ -11,7 +11,7 @@ export async function embedText(text) {
   const client = openai();
   const result = await client.embeddings.create({
     model: config.embeddingModel,
-    input: text.replace(/\\s+/g, ' ').trim(),
+    input: text.replace(/\s+/g, ' ').trim(),
   });
   return result.data[0].embedding;
 }
@@ -43,8 +43,8 @@ export async function answerWithRag(question) {
   }
 
   const context = sources.map((item, index) =>
-    `[S${index + 1}] ${item.title} (source: ${item.source})\\n${item.content}`
-  ).join('\\n\\n');
+    `[S${index + 1}] ${item.title} (source: ${item.source})\n${item.content}`
+  ).join('\n\n');
 
   const completion = await openai().chat.completions.create({
     model: config.chatModel,
@@ -62,7 +62,7 @@ export async function answerWithRag(question) {
           'Keep answers concise and cite supporting source labels like [S1].',
         ].join(' '),
       },
-      { role: 'user', content: `Restaurant context:\\n${context}\\n\\nQuestion: ${question}` },
+      { role: 'user', content: `Restaurant context:\n${context}\n\nQuestion: ${question}` },
     ],
   });
 
