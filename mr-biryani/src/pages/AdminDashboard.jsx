@@ -1,6 +1,6 @@
 import { useEffect,useMemo,useState } from 'react'
 import { Link,useNavigate } from 'react-router-dom'
-import { LayoutDashboard,IndianRupee,ClipboardList,Clock3,Utensils,Users,CalendarDays,RefreshCw,ChevronDown } from 'lucide-react'
+import { IndianRupee,ClipboardList,Clock3,Utensils,CalendarDays,RefreshCw } from 'lucide-react'
 import { getMockSession } from '../utils/mockAuth'
 import { getAllDemoOrders,getAllDemoReservations,getDashboardMetrics,getTables,updateDemoOrder,updateTableStatus } from '../utils/mockRestaurant'
 
