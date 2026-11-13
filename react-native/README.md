@@ -434,3 +434,30 @@ Do not block the initial mobile foundation on decisions that do not affect it, b
 - [Seven-role RBAC specification](../backend/docs/rbac.md)
 - [Backend data-flow diagrams](../backend/docs/data-flow-diagrams.md)
 - [Web frontend RBAC integration contract](../mr-biryani/docs/rbac-integration.md)
+
+
+## Shared backend with the React website
+
+**The React website and this React Native app use one shared backend.** The mobile app is not a separate product backend and must not introduce its own API server, database, authentication implementation, RBAC policy or duplicate business logic.
+
+- React web client: `../mr-biryani/`
+- Shared backend: `../backend/`
+- Mobile client: this `react-native/` project
+
+Both clients consume the same versioned `/api/v1` HTTPS endpoints and share the same PostgreSQL source of truth, authentication/session lifecycle, seven-role permission assignments, branch scoping, validation contracts, order/reservation/table/billing/payment workflows, audit rules and real-time event semantics.
+
+Only presentation and device-specific concerns differ. React Native owns native navigation, secure device storage, push notification registration, printer/Bluetooth integration where supported, and mobile offline UX. The backend owns identity, authorization, business rules, transactional state changes, payment verification and durable records. Do not implement pricing, taxes, table allocation, reservation confirmation, payment settlement or role authorization as trusted client-side logic.
+
+### Shared API integration rule
+
+OpenAPI is the contract consumed by both clients. Keep request/response schemas, pagination, error codes and event payloads client-neutral. A feature implemented in one client should be available to the other through the same backend capability and permission policy, subject to the client UI scope. Use backward-compatible API evolution or explicit versioning so a mobile release does not break the deployed web client (and vice versa).
+
+```text
+React Website ───────┐
+                     ├── HTTPS /api/v1 ── One shared backend ── PostgreSQL
+React Native App ────┘                       │
+                                             ├── Auth + seven-role RBAC
+                                             ├── Orders / reservations / POS
+                                             ├── Billing / payments / inventory
+                                             └── Realtime events / notifications
+```
