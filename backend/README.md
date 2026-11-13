@@ -192,3 +192,30 @@ See [RAG chatbot architecture](./docs/rag-chatbot-architecture.md) for the compl
 - Use live authorized domain services for a customer's own order/reservation status; never vector-index private operational records.
 - Initial assistant is read-only and cites sources. No autonomous order, payment, refund, reservation or inventory mutation.
 - Track retrieval quality, groundedness, citation coverage, latency, token cost, feedback and safety regressions.
+
+
+## RAG chatbot (initial implementation)
+
+A retrieval-augmented restaurant information assistant is scaffolded in this backend:
+- `POST /api/v1/chat` accepts a validated question and returns an answer with source metadata.
+- OpenAI embeddings (`text-embedding-3-small`, 1536 dimensions) are stored in PostgreSQL using pgvector.
+- Cosine-similarity retrieval selects published knowledge chunks; the LLM is instructed to answer only from retrieved context and abstain when context is insufficient.
+- Knowledge sources live in `backend/knowledge/`; ingestion chunks Markdown/text, hashes chunks for idempotent upserts, generates embeddings, and indexes them.
+- Rate limiting, request-size limits, Helmet, CORS allowlisting and server-side API-key configuration are included.
+
+### Setup
+1. Use PostgreSQL with the pgvector extension available.
+2. Copy `.env.example` to `.env`, configure `DATABASE_URL`, `OPENAI_API_KEY` and allowed frontend origins.
+3. Run `npm install`.
+4. Run `npm run db:migrate`.
+5. Run `npm run rag:ingest` to index approved knowledge files.
+6. Run `npm run dev` and set `VITE_API_BASE_URL=http://localhost:4000/api/v1` in the React app.
+
+### API contract
+`POST /api/v1/chat`
+
+Request: `{ "message": "Do you accept table reservations?" }`
+
+Response: `{ "answer": "...", "sources": [{ "title": "...", "source": "...", "similarity": 0.8 }], "grounded": true }`
+
+The chatbot is informational only. It does not perform order, payment, refund or reservation mutations and does not provide live operational status. Before production, integrate the existing authentication/RBAC middleware, enforce user/branch-aware retrieval where private documents are introduced, add conversation persistence only with an explicit retention policy, and run migrations/ingestion/integration tests. Do not ingest customer PII, payment data, secrets or unapproved internal documents.
