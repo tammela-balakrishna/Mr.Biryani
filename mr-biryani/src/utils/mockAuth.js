@@ -4,8 +4,12 @@ export const MOCK_OTP = '123456'
 
 const demoUsers = [
  { id:'demo-customer', name:'Demo Customer', phone:'9876543210', role:'customer', createdAt:'2026-11-13T00:00:00.000Z' },
- { id:'demo-admin', name:'Demo Admin', phone:'9000000001', role:'admin', createdAt:'2026-11-13T00:00:00.000Z' },
- { id:'demo-staff', name:'Demo Staff', phone:'9000000002', role:'staff', createdAt:'2026-11-13T00:00:00.000Z' },
+ { id:'demo-waiter', name:'Demo Waiter', phone:'9000000001', role:'waiter', createdAt:'2026-11-13T00:00:00.000Z' },
+ { id:'demo-receptionist', name:'Demo Receptionist', phone:'9000000002', role:'receptionist', createdAt:'2026-11-13T00:00:00.000Z' },
+ { id:'demo-captain', name:'Demo Captain', phone:'9000000003', role:'captain', createdAt:'2026-11-13T00:00:00.000Z' },
+ { id:'demo-cashier', name:'Demo Cashier', phone:'9000000004', role:'cashier', createdAt:'2026-11-13T00:00:00.000Z' },
+ { id:'demo-manager', name:'Demo Manager', phone:'9000000005', role:'manager', createdAt:'2026-11-13T00:00:00.000Z' },
+ { id:'demo-admin', name:'Demo Admin', phone:'9000000006', role:'admin', createdAt:'2026-11-13T00:00:00.000Z' },
 ]
 export const normalizePhone = value => String(value || '').replace(/\D/g,'').slice(-10)
 export const isValidIndianPhone = value => /^[6-9]\d{9}$/.test(normalizePhone(value))
