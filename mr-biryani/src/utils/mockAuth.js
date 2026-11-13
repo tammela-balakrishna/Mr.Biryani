@@ -17,8 +17,10 @@ export const getMockUsers = () => {
  try {
   const stored=JSON.parse(localStorage.getItem(USERS_KEY)||'null')
   const users=Array.isArray(stored)?stored:[]
-  const merged=[...users]
-  demoUsers.forEach(seed=>{if(!merged.some(user=>user.id===seed.id))merged.push(seed)})
+  // Keep built-in demo identities aligned with the current seven-role catalogue.
+  // Preserve user-created demo registrations while replacing only seeded accounts.
+  const merged=users.filter(user=>!demoUsers.some(seed=>seed.id===user.id))
+  merged.push(...demoUsers)
   localStorage.setItem(USERS_KEY,JSON.stringify(merged))
   return merged
  } catch {
