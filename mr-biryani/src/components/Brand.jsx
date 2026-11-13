@@ -2,14 +2,7 @@ import { Link } from 'react-router-dom'
 import { LogoBadge, BrandLogo } from './Logo'
 
 /* Save as src/components/Brand.jsx
-   Clickable logo for the Navbar and Footer. Drawn entirely with SVG components
-   (see Logo.jsx), so /images/mrBiriyaniLogo.svg is no longer needed.
-
-   Props
-   - compact    smaller size (use when the navbar is scrolled)
-   - showText   true: badge + brand name + tagline, false: badge only
-   - tone       'dark' (for dark backgrounds, default) | 'light' (for white backgrounds)
-   - to / onClick / className   passed to the link
+   Clickable logo for the Navbar and Footer using the pure SVG points.
 */
 
 function Brand({
@@ -30,7 +23,7 @@ function Brand({
       {showText ? (
         <BrandLogo
           tone={tone}
-          className={`w-auto drop-shadow-[0_4px_12px_rgba(212,166,58,0.25)] transition-all duration-300 ${
+          className={`w-auto transition-all duration-300 ${
             compact ? 'h-11 sm:h-12' : 'h-14 sm:h-16'
           }`}
         />

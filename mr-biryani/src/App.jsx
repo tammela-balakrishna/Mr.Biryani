@@ -4,6 +4,7 @@ import { Routes, Route, Link, useLocation } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import ScrollToTop from './components/ScrollToTop'
+import ProtectedRoute from './components/ProtectedRoute'
 
 
 import Home from './pages/Home'
@@ -11,9 +12,13 @@ import Menu from './pages/Menu'
 import About from './pages/About'
 import Gallery from './pages/Gallery'
 import Order from './pages/Order'
+import OrderHistory from './pages/OrderHistory'
+import Reviews from './pages/Reviews'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Contact from './pages/Contact'
+
+
 
 function NotFound() {
   return (
@@ -64,10 +69,20 @@ function App() {
           <Route path="/about" element={<About />} />
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/order" element={<Order />} />
+          <Route path="/order-history" element={<OrderHistory />} />
+          <Route path="/reviews" element={<Reviews />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="*" element={<NotFound />} />
+          <Route
+  path="/order-history"
+  element={
+    <ProtectedRoute>
+      <OrderHistory />
+    </ProtectedRoute>
+  }
+/>
         </Routes>
       </div>
 

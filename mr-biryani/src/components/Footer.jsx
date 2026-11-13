@@ -5,14 +5,15 @@ import {
   siInstagram,
   siYoutube,
 } from 'simple-icons/icons'
+
 import Brand from './Brand'
+
 import {
   MapPin,
   Phone,
   Mail,
   Clock,
   ArrowRight,
-  UtensilsCrossed,
 } from 'lucide-react'
 
 const quickLinks = [
@@ -20,7 +21,26 @@ const quickLinks = [
   { name: 'Our Menu', path: '/menu' },
   { name: 'About Us', path: '/about' },
   { name: 'Gallery', path: '/gallery' },
+  { name: 'Customer Reviews', path: '/reviews' },
   { name: 'Contact Us', path: '/contact' },
+]
+
+const socialLinks = [
+  {
+    name: 'Instagram',
+    url: 'https://www.instagram.com/',
+    icon: siInstagram,
+  },
+  {
+    name: 'Facebook',
+    url: 'https://www.facebook.com/',
+    icon: siFacebook,
+  },
+  {
+    name: 'YouTube',
+    url: 'https://www.youtube.com/',
+    icon: siYoutube,
+  },
 ]
 
 function SocialIcon({ icon }) {
@@ -39,22 +59,20 @@ function Footer() {
   return (
     <footer className="border-t border-[#D4A63A]/30 bg-[#080808] text-neutral-300">
 
-      {/* Decorative top line */}
+      {/* Decorative top border */}
       <div className="h-1 w-full bg-gradient-to-r from-[#321010] via-[#D4A63A] to-[#321010]" />
 
       {/* Main footer */}
-      <div className="mx-auto grid max-w-7xl gap-12 px-5 py-16 sm:grid-cols-2 lg:grid-cols-4 lg:gap-10 lg:px-8">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-12 px-5 py-14 sm:grid-cols-2 lg:grid-cols-4 lg:gap-10 lg:px-8">
 
-        {/* Brand */}
-{/* Brand */}
-<div>
-  <Brand
-    to="/"
-    showText={true}
-    tone="dark"
-    className="origin-left"
-  />
-
+        {/* Brand and description */}
+        <div>
+          <Brand
+            to="/"
+            showText={true}
+            tone="dark"
+            className="origin-left"
+          />
 
           <p className="mt-6 max-w-xs text-sm leading-7 text-neutral-400">
             Experience the authentic taste of Andhra and Hyderabadi cuisine.
@@ -63,23 +81,7 @@ function Footer() {
 
           {/* Social media */}
           <div className="mt-7 flex gap-3">
-            {[
-              {
-                name: 'Instagram',
-                url: 'https://www.instagram.com/',
-                icon: siInstagram,
-              },
-              {
-                name: 'Facebook',
-                url: 'https://www.facebook.com/',
-                icon: siFacebook,
-              },
-              {
-                name: 'YouTube',
-                url: 'https://www.youtube.com/',
-                icon: siYoutube,
-              },
-            ].map((social) => (
+            {socialLinks.map((social) => (
               <a
                 key={social.name}
                 href={social.url}
@@ -118,7 +120,7 @@ function Footer() {
           </ul>
         </div>
 
-        {/* Contact */}
+        {/* Contact information */}
         <div>
           <h3 className="mb-7 font-serif text-xl font-bold text-white">
             Contact Us
@@ -126,7 +128,10 @@ function Footer() {
 
           <ul className="space-y-5 text-sm">
             <li className="flex items-start gap-3">
-              <MapPin className="mt-1 shrink-0 text-[#D4A63A]" size={19} />
+              <MapPin
+                className="mt-1 shrink-0 text-[#D4A63A]"
+                size={19}
+              />
               <span className="leading-6 text-neutral-400">
                 BTM 1st Stage / Madiwala,
                 Bengaluru, Karnataka, India.
@@ -134,14 +139,20 @@ function Footer() {
             </li>
 
             <li className="flex items-center gap-3">
-              <Phone className="shrink-0 text-[#D4A63A]" size={18} />
+              <Phone
+                className="shrink-0 text-[#D4A63A]"
+                size={18}
+              />
               <span className="text-neutral-400">
                 Contact restaurant for phone details
               </span>
             </li>
 
             <li className="flex items-center gap-3">
-              <Mail className="shrink-0 text-[#D4A63A]" size={18} />
+              <Mail
+                className="shrink-0 text-[#D4A63A]"
+                size={18}
+              />
               <span className="text-neutral-400">
                 Email details coming soon
               </span>
@@ -156,7 +167,10 @@ function Footer() {
           </h3>
 
           <div className="flex items-start gap-3">
-            <Clock className="mt-1 shrink-0 text-[#D4A63A]" size={20} />
+            <Clock
+              className="mt-1 shrink-0 text-[#D4A63A]"
+              size={20}
+            />
 
             <div>
               <p className="text-sm font-semibold text-white">
@@ -179,7 +193,7 @@ function Footer() {
         </div>
       </div>
 
-      {/* Copyright */}
+      {/* Copyright section */}
       <div className="border-t border-white/10 bg-[#0D0B0B]">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-5 py-6 text-center text-xs text-neutral-500 sm:flex-row sm:text-left lg:px-8">
 
@@ -188,20 +202,30 @@ function Footer() {
           </p>
 
           <div className="flex flex-wrap justify-center gap-5">
-            <Link to="/login" className="transition hover:text-[#D4A63A]">
+            <Link
+              to="/login"
+              className="transition hover:text-[#D4A63A]"
+            >
               Login
             </Link>
 
-            <Link to="/register" className="transition hover:text-[#D4A63A]">
+            <Link
+              to="/register"
+              className="transition hover:text-[#D4A63A]"
+            >
               Register
             </Link>
 
-            <Link to="/contact" className="transition hover:text-[#D4A63A]">
+            <Link
+              to="/contact"
+              className="transition hover:text-[#D4A63A]"
+            >
               Support
             </Link>
           </div>
         </div>
       </div>
+
     </footer>
   )
 }

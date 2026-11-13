@@ -1,49 +1,42 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import {
   ArrowRight,
   CheckCircle2,
-  Clock,
   Mail,
   MapPin,
-  MessageCircle,
   Phone,
-  Send,
-  UtensilsCrossed,
 } from 'lucide-react'
 import { MotionStyles, Reveal } from '../components/Motion'
 
-/* TODO: replace the "to be added" text with the real phone, email and hours. */
-const contactDetails = [
-  {
-    icon: MapPin,
-    title: 'Our Location',
-    description: 'BTM 1st Stage / Madiwala, Bengaluru, Karnataka, India.',
-    gradient: 'from-orange-400 to-red-500',
-  },
-  {
-    icon: Phone,
-    title: 'Phone Number',
-    description: 'Restaurant phone number to be added.',
-    gradient: 'from-emerald-400 to-teal-600',
-  },
-  {
-    icon: Mail,
-    title: 'Email Address',
-    description: 'Restaurant email address to be added.',
-    gradient: 'from-sky-400 to-blue-600',
-  },
-  {
-    icon: Clock,
-    title: 'Opening Hours',
-    description: 'Please contact the restaurant for current opening hours.',
-    gradient: 'from-fuchsia-500 to-purple-600',
-  },
-]
+/* ---------- CUSTOM ICONS (Fallback for missing Lucide exports) ---------- */
+const FacebookIcon = ({ className }) => (
+  <svg className={className} fill="currentColor" viewBox="0 0 24 24" strokeWidth={0}>
+    <path d="M18.77 7.46H14.5v-1.9c0-.9.6-1.1 1-1.1h3V.5h-4.33C10.24.5 9.5 3.44 9.5 5.32v2.15h-3v4h3v12h5v-12h3.85l.42-4z" />
+  </svg>
+);
 
-const initialForm = { name: '', email: '', phone: '', subject: '', message: '' }
+const InstagramIcon = ({ className }) => (
+  <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+    <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+  </svg>
+);
 
-function Contact() {
+const YoutubeIcon = ({ className }) => (
+  <svg className={className} fill="currentColor" viewBox="0 0 24 24" strokeWidth={0}>
+    <path d="M21.543 6.498C22 8.28 22 12 22 12s0 3.72-.457 5.502c-.254.985-.997 1.76-1.938 2.022C17.896 20 12 20 12 20s-5.893 0-7.605-.476c-.945-.266-1.687-1.04-1.938-2.022C2 15.72 2 12 2 12s0-3.72.457-5.502c.254-.985.997-1.76 1.938-2.022C6.107 4 12 4 12 4s5.896 0 7.605.476c.945.266 1.687 1.04 1.938 2.022zM10 15.5l6-3.5-6-3.5v7z" />
+  </svg>
+);
+
+/* ---------- DATA & IMAGES ---------- */
+const IMG = {
+  bg: 'https://images.unsplash.com/photo-1596797038530-2c107229654b?auto=format&fit=crop&w=1920&q=80',
+}
+
+const initialForm = { name: '', email: '', message: '' }
+
+export default function Contact() {
   const [form, setForm] = useState(initialForm)
   const [submitted, setSubmitted] = useState(false)
 
@@ -55,300 +48,202 @@ function Contact() {
 
   const handleSubmit = (event) => {
     event.preventDefault()
-    // Demo only: connect an API or email service to deliver messages.
     setSubmitted(true)
     setForm(initialForm)
   }
 
   const inputClass =
-    'w-full rounded-lg border border-white/10 bg-[#080808] px-4 py-3.5 text-sm text-white placeholder:text-neutral-600 outline-none transition duration-300 focus:-translate-y-0.5 focus:border-[#D4A63A] focus:ring-2 focus:ring-[#D4A63A]/20'
+    'w-full px-4 py-3.5 bg-white border border-gray-200 rounded-md text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FFC107]/50 focus:border-[#FFC107] transition-all font-sans text-sm'
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#080808] text-white">
+    <main
+      className="min-h-screen relative py-12 px-6"
+      style={{
+        backgroundImage: `url('${IMG.bg}')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+      }}
+    >
       <MotionStyles />
 
-      {/* Hero */}
-      <section className="relative isolate overflow-hidden border-b border-white/10 px-5 py-20 sm:py-28">
-        <div
-          className="kenburns absolute inset-0 -z-20 bg-cover bg-center"
-          style={{
-            backgroundImage:
-              "url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1800&q=85')",
-          }}
-        />
-        <div className="absolute inset-0 -z-10 bg-black/80" />
-        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black via-black/50 to-[#321010]/60" />
-        <div className="floaty absolute -right-20 -top-20 -z-10 h-72 w-72 rounded-full bg-orange-500/20 blur-[100px]" />
-        <div
-          className="floaty absolute -left-16 bottom-0 -z-10 h-64 w-64 rounded-full bg-fuchsia-600/20 blur-[100px]"
-          style={{ animationDelay: '-3s' }}
-        />
+      {/* Global dark overlay to match the image's dark ambiance */}
+      <div className="absolute inset-0 bg-[#0a0500]/85 z-0"></div>
 
-        <div className="mx-auto max-w-7xl text-center">
-          <div className="rise-in mb-6 inline-flex items-center gap-2 rounded-full border border-[#D4A63A]/40 bg-[#080808]/90 px-5 py-2.5">
-            <UtensilsCrossed size={16} className="text-orange-400" />
-            <span className="text-xs font-bold uppercase tracking-[3px] text-[#D4A63A]">
-              Get in Touch
-            </span>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+        .font-display { font-family: 'Montserrat', sans-serif; }
+        .bg-instagram {
+          background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
+        }
+      `}</style>
+
+      <div className="relative z-10 max-w-5xl mx-auto font-display pt-8">
+        
+        {/* HEADER */}
+        <Reveal>
+          <div className="flex flex-col items-center justify-center mb-12">
+            <h1 className="font-bold text-[#FFC107] text-4xl tracking-wide drop-shadow-md">
+              Contact Us
+            </h1>
+            <div className="flex items-center gap-4 mt-3">
+              <svg width="40" height="12" viewBox="0 0 40 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0 6H34M34 6L28 1M34 6L28 11" stroke="#FFC107" strokeWidth="2"/>
+                <circle cx="36" cy="6" r="3" fill="#FFC107"/>
+              </svg>
+              <p className="font-semibold text-white text-lg drop-shadow-md">
+                We are here to help you
+              </p>
+              <svg width="40" height="12" viewBox="0 0 40 12" fill="none" xmlns="http://www.w3.org/2000/svg" className="rotate-180">
+                <path d="M0 6H34M34 6L28 1M34 6L28 11" stroke="#FFC107" strokeWidth="2"/>
+                <circle cx="36" cy="6" r="3" fill="#FFC107"/>
+              </svg>
+            </div>
           </div>
+        </Reveal>
 
-          <h1
-            className="rise-in font-serif text-5xl font-bold sm:text-6xl lg:text-7xl"
-            style={{ animationDelay: '.15s' }}
-          >
-            Contact <span className="text-shimmer">Us</span>
-          </h1>
-
-          <p
-            className="rise-in mx-auto mt-5 max-w-2xl text-sm leading-8 text-neutral-200 sm:text-lg"
-            style={{ animationDelay: '.3s' }}
-          >
-            Have a question, feedback, or need assistance? We'd love to hear
-            from you. Connect with the Mr. Biriyani team.
-          </p>
-
-          <nav
-            aria-label="Breadcrumb"
-            className="rise-in mt-8 flex items-center justify-center gap-3 text-sm"
-            style={{ animationDelay: '.45s' }}
-          >
-            <Link to="/" className="text-neutral-400 transition hover:text-[#D4A63A]">
-              Home
-            </Link>
-            <span className="text-[#D4A63A]">/</span>
-            <span className="font-semibold text-[#D4A63A]">Contact</span>
-          </nav>
-        </div>
-
-        <div className="pointer-events-none absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-orange-500 via-[#D4A63A] to-fuchsia-500" />
-      </section>
-
-      {/* Contact Information and Form */}
-      <section className="mx-auto grid max-w-7xl gap-10 px-5 py-14 sm:px-8 sm:py-20 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
-        {/* Left */}
-        <div>
-          <Reveal>
-            <p className="text-xs font-bold uppercase tracking-[3px] text-[#D4A63A]">
-              Let's Connect
-            </p>
-            <h2 className="mt-3 font-serif text-3xl font-bold leading-tight sm:text-4xl">
-              We're Here to
-              <span className="text-shimmer block">Help You</span>
-            </h2>
-            <p className="mt-5 max-w-lg text-sm leading-8 text-neutral-400 sm:text-base">
-              Whether you have questions about our menu, restaurant, or
-              orders, feel free to get in touch with us.
-            </p>
-          </Reveal>
-
-          <div className="mt-9 space-y-6">
-            {contactDetails.map(({ icon: Icon, title, description, gradient }, i) => (
-              <Reveal key={title} delay={i * 100}>
-                <div className="group flex items-start gap-4">
-                  <div
-                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} shadow-lg transition duration-500 group-hover:-rotate-6 group-hover:scale-110`}
-                  >
-                    <Icon size={21} className="text-white" />
-                  </div>
-
-                  <div className="pt-1">
-                    <h3 className="text-sm font-bold text-white">{title}</h3>
-                    <p className="mt-1 max-w-sm text-sm leading-6 text-neutral-400">
-                      {description}
-                    </p>
-                  </div>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-
-          <Reveal className="mt-10">
-            <div className="relative overflow-hidden rounded-2xl border border-[#D4A63A]/20 bg-gradient-to-br from-[#321010] to-[#2a0b2a] p-6 sm:p-8">
-              <div className="floaty absolute -right-10 -top-10 h-36 w-36 rounded-full bg-orange-400/20 blur-3xl" />
-
-              <div className="relative">
-                <MessageCircle size={27} className="text-orange-400" />
-                <h3 className="mt-4 font-serif text-xl font-bold">
-                  We'd Love Your Feedback
-                </h3>
-                <p className="mt-2 text-sm leading-7 text-neutral-300">
-                  Your feedback helps us improve the food and experience we
-                  offer.
-                </p>
-                <Link
-                  to="/menu"
-                  className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-[#D4A63A] transition-all hover:gap-4 hover:text-[#E8BD57]"
-                >
-                  Explore Our Menu
-                  <ArrowRight size={16} />
-                </Link>
+        <div className="flex flex-col md:flex-row gap-10 lg:gap-16">
+          
+          {/* LEFT: Contact Information */}
+          <div className="flex-1 flex flex-col justify-center space-y-8 pr-0 lg:pr-8 border-r-0 md:border-r border-[#FFC107]/20">
+            <Reveal delay={100}>
+              <div className="flex items-center gap-5">
+                <Phone className="text-[#FFC107] w-6 h-6 flex-shrink-0" fill="#FFC107" strokeWidth={0} />
+                <p className="text-white font-semibold text-base">+91 8884866644</p>
               </div>
-            </div>
-          </Reveal>
-        </div>
+            </Reveal>
 
-        {/* Right: Form */}
-        <Reveal delay={150}>
-          <div
-            id="contact-form"
-            className="relative rounded-2xl border border-white/10 bg-[#111010] p-5 shadow-2xl shadow-black/30 sm:p-8 lg:p-10"
-          >
-            <div className="absolute inset-x-0 top-0 h-1 rounded-t-2xl bg-gradient-to-r from-orange-500 via-[#D4A63A] to-fuchsia-500" />
+            <Reveal delay={150}>
+              <div className="flex items-start gap-5">
+                <MapPin className="text-[#FFC107] w-7 h-7 flex-shrink-0 mt-1" fill="#FFC107" strokeWidth={1} stroke="#0a0500" />
+                <p className="text-white font-semibold text-base leading-snug">
+                  1st cross, 75 |14A, Maruthi Nagar Main Rd, near Surya sweets, Madiwala New Extension, Madiwala, 1st Stage, BTM 1st Stage, Bengaluru, Karnataka 560068
+                </p>
+              </div>
+            </Reveal>
 
-            <div className="mb-8">
-              <p className="text-xs font-bold uppercase tracking-[3px] text-[#D4A63A]">
-                Send an Enquiry
-              </p>
-              <h2 className="mt-3 font-serif text-3xl font-bold">
-                Send Us a <span className="text-shimmer">Message</span>
-              </h2>
-              <p className="mt-3 text-sm leading-6 text-neutral-400">
-                Fill in the details below. All fields except phone number are
-                required.
-              </p>
-            </div>
+            <Reveal delay={200}>
+              <div className="flex items-center gap-5">
+                <Mail className="text-[#FFC107] w-6 h-6 flex-shrink-0" fill="#FFC107" strokeWidth={1} stroke="#0a0500" />
+                <p className="text-white font-semibold text-base">info@mrbiryani.in</p>
+              </div>
+            </Reveal>
 
+            <Reveal delay={250}>
+              <div className="pt-4">
+                <div className="flex items-center gap-4 mb-4">
+                  <h3 className="text-white font-bold text-xl">Follow Us</h3>
+                  <div className="h-px bg-gradient-to-r from-[#FFC107] to-transparent w-16"></div>
+                </div>
+                <div className="flex gap-4">
+                  <a href="https://www.facebook.com/mr-biriyani-btm-1st-stage-bangalore/" aria-label="Facebook" className="w-10 h-10 rounded-md bg-[#1877F2] flex items-center justify-center transition-transform hover:-translate-y-1 shadow-lg">
+                    <FacebookIcon className="text-white w-6 h-6" />
+                  </a>
+                  <a href="https://www.instagram.com/mr.biriyani_bangalore/" aria-label="Instagram" className="w-10 h-10 rounded-md bg-instagram flex items-center justify-center transition-transform hover:-translate-y-1 shadow-lg">
+                    <InstagramIcon className="text-white w-6 h-6" />
+                  </a>
+                  <a href="www.youtube.com/@Mrbiryani5" aria-label="YouTube" className="w-10 h-10 rounded-md bg-[#FF0000] flex items-center justify-center transition-transform hover:-translate-y-1 shadow-lg">
+                    <YoutubeIcon className="text-white w-7 h-7" />
+                  </a>
+                </div>
+              </div>
+            </Reveal>
+          </div>
+
+          {/* RIGHT: Contact Form */}
+          <Reveal delay={300} className="flex-1 flex flex-col justify-center">
             {submitted && (
-              <div
-                role="status"
-                className="pop-in mb-6 flex items-start gap-3 rounded-xl border border-green-500/30 bg-green-950/40 p-4"
-              >
-                <CheckCircle2 size={20} className="mt-0.5 shrink-0 text-green-400" />
+              <div role="status" className="mb-6 flex items-start gap-3 rounded-lg border border-green-500/50 bg-[#110502]/90 backdrop-blur-md p-4 shadow-lg">
+                <CheckCircle2 size={20} className="shrink-0 text-green-400 mt-0.5" />
                 <div>
-                  <p className="text-sm font-bold text-green-400">
-                    Form submitted successfully
-                  </p>
+                  <p className="text-sm font-bold text-green-400">Message Sent Successfully</p>
                   <p className="mt-1 text-xs leading-5 text-neutral-300">
-                    This is a frontend demo. Your message has not been
-                    delivered to the restaurant.
+                    This is a frontend demo. Your message has not been delivered to the restaurant.
                   </p>
                 </div>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="grid gap-5 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="contact-name" className="mb-2 block text-sm font-semibold">
-                    Your Name <span className="text-[#D4A63A]">*</span>
-                  </label>
+            <div className="w-full bg-[#f8f9fa] rounded-xl overflow-hidden shadow-2xl flex flex-col">
+              <form onSubmit={handleSubmit} className="flex flex-col h-full">
+                <div className="p-6 md:p-8 space-y-5 flex-grow">
                   <input
-                    id="contact-name"
                     type="text"
                     name="name"
                     value={form.name}
                     onChange={handleChange}
-                    placeholder="Enter your name"
-                    autoComplete="name"
+                    placeholder="Your Name"
                     required
                     className={inputClass}
                   />
-                </div>
-
-                <div>
-                  <label htmlFor="contact-email" className="mb-2 block text-sm font-semibold">
-                    Email Address <span className="text-[#D4A63A]">*</span>
-                  </label>
                   <input
-                    id="contact-email"
                     type="email"
                     name="email"
                     value={form.email}
                     onChange={handleChange}
-                    placeholder="Enter your email"
-                    autoComplete="email"
+                    placeholder="Your Email"
                     required
                     className={inputClass}
                   />
+                  <textarea
+                    name="message"
+                    value={form.message}
+                    onChange={handleChange}
+                    placeholder="Your Message"
+                    required
+                    className={`${inputClass} min-h-[140px] resize-none`}
+                  ></textarea>
                 </div>
+
+                <button
+                  type="submit"
+                  className="w-full bg-[#FFC107] hover:bg-[#ffcd38] text-black font-bold py-4 flex justify-center items-center gap-2 transition-colors group"
+                >
+                  Send Message
+                  <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" strokeWidth={2.5} />
+                </button>
+              </form>
+            </div>
+          </Reveal>
+        </div>
+
+        {/* BOTTOM: Interactive Google Map Banner */}
+        <Reveal delay={400}>
+          <div className="mt-14 w-full rounded-2xl overflow-hidden flex flex-col md:flex-row border border-[#FFC107]/20 shadow-2xl bg-[#241710]">
+            
+            <div className="p-8 md:w-1/3 flex flex-row md:flex-col items-center md:items-start md:justify-center gap-4 z-10 bg-[#241710] shadow-xl md:shadow-[10px_0_15px_-3px_rgba(0,0,0,0.5)]">
+              <div className="w-12 h-12 flex-shrink-0">
+                <MapPin className="text-[#FFC107] w-full h-full" fill="#FFC107" strokeWidth={1} stroke="#241710" />
               </div>
-
-              <div>
-                <label htmlFor="contact-phone" className="mb-2 block text-sm font-semibold">
-                  Phone Number
-                </label>
-                <input
-                  id="contact-phone"
-                  type="tel"
-                  name="phone"
-                  value={form.phone}
-                  onChange={handleChange}
-                  placeholder="Enter your phone number (optional)"
-                  autoComplete="tel"
-                  className={inputClass}
-                />
+              <div className="flex flex-col items-start gap-1">
+                <h3 className="text-[#FFC107] font-bold text-2xl">Find Us Here</h3>
+                <a 
+                  href="https://www.google.com/maps/search/Mr.+Biryani,+BTM+1st+Stage,+Bengaluru" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-[#FFC107] font-semibold text-sm flex items-center gap-1 mt-1 hover:underline"
+                >
+                  View on Google Maps <ArrowRight className="w-4 h-4" />
+                </a>
               </div>
+            </div>
+            
+            <div className="md:w-2/3 h-72 md:h-auto min-h-[300px] relative bg-gray-200">
+              {/* Fully interactive embedded Google Map */}
+              <iframe 
+                title="Mr. Biryani Location"
+                src="https://maps.google.com/maps?q=Mr.+Biryani,+BTM+1st+Stage,+Bengaluru&t=&z=15&ie=UTF8&iwloc=&output=embed" 
+                className="w-full h-full border-0 absolute inset-0 filter contrast-[1.05]" 
+                allowFullScreen="" 
+                loading="lazy" 
+                referrerPolicy="no-referrer-when-downgrade"
+              ></iframe>
+            </div>
 
-              <div>
-                <label htmlFor="contact-subject" className="mb-2 block text-sm font-semibold">
-                  Subject <span className="text-[#D4A63A]">*</span>
-                </label>
-                <input
-                  id="contact-subject"
-                  type="text"
-                  name="subject"
-                  value={form.subject}
-                  onChange={handleChange}
-                  placeholder="What is your enquiry about?"
-                  required
-                  className={inputClass}
-                />
-              </div>
-
-              <div>
-                <label htmlFor="contact-message" className="mb-2 block text-sm font-semibold">
-                  Your Message <span className="text-[#D4A63A]">*</span>
-                </label>
-                <textarea
-                  id="contact-message"
-                  name="message"
-                  value={form.message}
-                  onChange={handleChange}
-                  rows={5}
-                  placeholder="Write your message here..."
-                  required
-                  className={`${inputClass} min-h-36 resize-y`}
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="group flex w-full items-center justify-center gap-3 rounded-lg bg-gradient-to-r from-[#D4A63A] via-orange-400 to-[#D4A63A] px-6 py-4 text-sm font-extrabold text-black transition duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-orange-500/30 active:translate-y-0"
-              >
-                Send Message
-                <Send size={17} className="transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1" />
-              </button>
-
-              <p className="text-center text-xs leading-5 text-neutral-500">
-                This form is currently a frontend demo. Connect an email
-                service or backend API to receive messages.
-              </p>
-            </form>
           </div>
         </Reveal>
-      </section>
-
-      {/* Bottom CTA */}
-      <section className="border-t border-white/10 bg-[#111010] px-5 py-14 text-center sm:py-16">
-        <Reveal className="mx-auto max-w-2xl">
-          <UtensilsCrossed size={30} className="floaty mx-auto text-orange-400" />
-          <h2 className="mt-5 font-serif text-2xl font-bold sm:text-3xl">
-            Experience the Taste of Andhra
-          </h2>
-          <p className="mt-3 text-sm leading-7 text-neutral-400">
-            Discover our biryanis, family packs and delicious starters.
-          </p>
-          <Link
-            to="/menu"
-            className="mt-7 inline-flex items-center gap-3 rounded-lg bg-[#D4A63A] px-7 py-3.5 text-sm font-bold text-black transition hover:-translate-y-1 hover:bg-[#E8BD57]"
-          >
-            Explore Menu
-            <ArrowRight size={17} />
-          </Link>
-        </Reveal>
-      </section>
+        
+      </div>
     </main>
   )
 }
-
-export default Contact
