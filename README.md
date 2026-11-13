@@ -44,6 +44,11 @@ The React website (`mr-biryani/`) and React Native mobile application (`react-na
 The product roadmap includes a **RAG-powered restaurant assistant** for the React website and React Native app. Both clients will use one shared `/api/v1/chat` backend module, approved restaurant knowledge, PostgreSQL with pgvector, provider adapters, source citations and the existing seven-role RBAC/branch/ownership policies. Initial scope is read-only menu, FAQ, restaurant policy and public branch information. Private order/reservation lookups must use authenticated domain services; the assistant must not execute payments, refunds or other transactions from generated text. This is a planned feature, not implemented functionality. See [RAG chatbot architecture](./backend/docs/rag-chatbot-architecture.md).
 
 
-## AI assistant (RAG)
 
-The React website includes an informational chat widget backed by the shared Node.js/Express API. The backend retrieves answers from approved restaurant knowledge stored in PostgreSQL with pgvector and returns source metadata. The assistant is informational only and cannot place orders, change reservations, process payments or expose private customer/staff records. The React Native application is intentionally unchanged; it can consume the same `POST /api/v1/chat` endpoint in a separately scoped mobile implementation.
+## AI assistant / RAG — planned
+
+The RAG-powered restaurant assistant is a documented future feature, not a completed backend or mobile implementation. The React website UI may be developed independently, but the shared backend API, knowledge ingestion, embeddings, vector retrieval and model orchestration remain planned. React Native will consume the same shared API in a later phase; no separate mobile RAG implementation is planned.
+
+- [RAG architecture and rollout plan](./backend/docs/rag-chatbot-architecture.md)
+- [Backend implementation plan](./backend/README.md#ai-assistant--rag--documentation-only)
+- [React Native integration plan](./react-native/README.md#ai-assistant--rag-integration--documentation-only)
