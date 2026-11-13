@@ -1,396 +1,320 @@
 # Mr. BIRIYANI — Backend Data-Flow Diagrams
 
-These Mermaid diagrams document the planned data movement through the Mr. BIRIYANI restaurant management backend. They are architecture documentation, not evidence of implemented services or database tables.
+**Status:** Approved target architecture; diagrams describe planned flows, not implemented services or tables.
 
 ## Diagram index
 
 1. [Level 0 — System context](#level-0--system-context)
 2. [Level 1 — Backend processes](#level-1--backend-processes)
-3. [Level 2 — Authentication and RBAC](#level-2--authentication-and-rbac)
+3. [Level 2 — Authentication and seven-role RBAC](#level-2--authentication-and-seven-role-rbac)
 4. [Level 2 — Online customer order](#level-2--online-customer-order)
 5. [Level 2 — Offline POS and billing](#level-2--offline-pos-and-billing)
 6. [Level 2 — Reservation workflow](#level-2--reservation-workflow)
 7. [Level 2 — Payment workflow](#level-2--payment-workflow)
-
----
+8. [Level 2 — Branch and resource authorization](#level-2--branch-and-resource-authorization)
 
 ## Level 0 — System context
 
-The backend is represented as one process interacting with external actors and providers.
-
 ```mermaid
 flowchart TB
     C[Customer]
+    W[Waiter]
+    R[Receptionist]
+    CP[Captain]
+    CA[Cashier]
+    M[Manager]
     A[Admin]
-    S[Restaurant Staff]
     POS[Multiple POS Devices]
-
-    SYSTEM((Mr. BIRIYANI Backend))
-
+    API((Mr. BIRIYANI API))
     DB[(PostgreSQL)]
-    PG[Payment Gateway]
-    MSG[SMS / Notification Provider]
-    K[Kitchen Display System]
+    PG[Payment Provider]
+    MSG[Notification Provider]
+    K[Kitchen Display]
 
-    C -->|Registration, login, orders, reservations| SYSTEM
-    SYSTEM -->|Menu, order status, booking confirmation| C
-
-    A -->|Management requests| SYSTEM
-    SYSTEM -->|Dashboard and reports| A
-
-    S -->|POS orders, billing, table operations| SYSTEM
-    POS -->|POS requests| SYSTEM
-    SYSTEM -->|Order updates and table status| POS
-
-    SYSTEM -->|Read and write| DB
-    DB -->|Persisted records| SYSTEM
-
-    SYSTEM <-->|Payment requests and verified results| PG
-    SYSTEM <-->|Notifications| MSG
-    SYSTEM -->|Kitchen tickets and order updates| K
+    C <-->|Menu, own orders, reservations, bills| API
+    W <-->|Assigned tables, orders, service status| API
+    R <-->|Reservations, walk-ins, check-in, tables| API
+    CP <-->|Floor, waiter assignments, coordination| API
+    CA <-->|Bills, tenders, receipts, authorized refunds| API
+    M <-->|Operations, inventory, expenses, reports| API
+    A <-->|Users, roles, permissions, settings| API
+    POS <-->|Authenticated POS requests and updates| API
+    API <-->|Transactional data| DB
+    API <-->|Payment intents and verified webhooks| PG
+    API <-->|Notifications| MSG
+    API -->|Kitchen tickets and updates| K
 ```
 
-**Data ownership:** PostgreSQL is the persistent source of truth. Frontend clients do not directly access the database.
+All clients use the API. PostgreSQL is the durable source of truth; browser state and WebSocket messages are not authoritative records.
 
 ## Level 1 — Backend processes
 
-This decomposes the backend into its major functional processes and data stores.
-
 ```mermaid
 flowchart TB
-    C[Customer]
-    A[Admin]
-    S[Staff / POS]
+    ACT[Customer / Waiter / Receptionist / Captain / Cashier / Manager / Admin]
+    AUTH((1. Authentication and Authorization))
+    MENU((2. Menu))
+    ORDER((3. Order Management))
+    FLOOR((4. POS, Tables and Sessions))
+    RES((5. Reservations))
+    KITCHEN((6. Kitchen and Service))
+    BILL((7. Billing and Payments))
+    MGMT((8. Management and Reports))
+    ADMIN((9. System Administration))
+    BRANCH((10. Branch and Device Context))
 
-    P1((1.0 Authentication and RBAC))
-    P2((2.0 Menu Management))
-    P3((3.0 Order Management))
-    P4((4.0 POS and Table Management))
-    P5((5.0 Reservation Management))
-    P6((6.0 Payment Management))
-    P7((7.0 Dashboard and Reporting))
-    P8((8.0 Kitchen Management))
+    D1[(Users, Roles, Permissions)]
+    D2[(Branches and Assignments)]
+    D3[(Menu)]
+    D4[(Orders and Items)]
+    D5[(Tables and Sessions)]
+    D6[(Reservations)]
+    D7[(Kitchen Tickets)]
+    D8[(Bills and Payments)]
+    D9[(Inventory and Expenses)]
+    D10[(Audit Logs)]
 
-    D1[(Users and Roles)]
-    D2[(Menu and Categories)]
-    D3[(Orders and Order Items)]
-    D4[(Tables and Sessions)]
-    D5[(Reservations)]
-    D6[(Payments and Invoices)]
-    D7[(Audit Logs)]
-    D8[(Kitchen Tickets)]
-
-    PG[Payment Gateway]
-    N[Notification Provider]
-
-    C -->|Credentials| P1
-    A -->|Credentials| P1
-    S -->|Credentials| P1
-    P1 <--> D1
-    P1 -->|Access token and identity| C
-    P1 -->|Access token and identity| A
-    P1 -->|Access token and identity| S
-
-    C -->|Browse menu| P2
-    A -->|Manage menu| P2
-    P2 <--> D2
-
-    C -->|Online order| P3
-    P3 <--> D3
-    P3 -->|Validate item and price| D2
-
-    S -->|POS order| P4
-    P4 <--> D3
-    P4 <--> D4
-    P4 -->|Create kitchen ticket| P8
-
-    C -->|Reservation request| P5
-    S -->|Reservation operations| P5
-    P5 <--> D5
-    P5 <--> D4
-
-    P3 -->|Payment request| P6
-    P4 -->|Offline tender record| P6
-    P6 <--> D6
-    P6 <-->|Payment request and verification| PG
-    P6 -->|Payment notification| N
-
-    A -->|Dashboard request| P7
-    P7 --> D3
-    P7 --> D5
-    P7 --> D6
-    P7 -->|Reports| A
-
-    P8 <--> D8
-
-    P3 --> D7
-    P4 --> D7
-    P5 --> D7
-    P6 --> D7
+    ACT --> AUTH
+    AUTH <--> D1
+    AUTH <--> D2
+    AUTH --> MENU
+    AUTH --> ORDER
+    AUTH --> FLOOR
+    AUTH --> RES
+    AUTH --> KITCHEN
+    AUTH --> BILL
+    AUTH --> MGMT
+    AUTH --> ADMIN
+    BRANCH <--> D2
+    MENU <--> D3
+    ORDER <--> D4
+    ORDER --> D3
+    FLOOR <--> D4
+    FLOOR <--> D5
+    RES <--> D6
+    RES <--> D5
+    KITCHEN <--> D7
+    BILL <--> D8
+    BILL --> D4
+    MGMT --> D4
+    MGMT --> D6
+    MGMT --> D8
+    MGMT <--> D9
+    ADMIN <--> D1
+    ADMIN --> D10
+    ORDER --> D10
+    FLOOR --> D10
+    RES --> D10
+    BILL --> D10
 ```
 
-Authentication and authorization are cross-cutting controls: every protected process must verify the caller's identity and permissions before performing an operation.
+Every protected process passes authentication, permission evaluation, branch scope, resource ownership/assignment and business-state validation.
 
-## Level 2 — Authentication and RBAC
+## Level 2 — Authentication and seven-role RBAC
 
 ```mermaid
 flowchart TD
-    U[Customer / Staff / Admin]
-    UI[React Frontend]
+    CLIENT[React Customer / Staff / Manager / Admin Client]
+    LOGIN((1. Receive registration or login))
+    VALID((2. Validate input and account status))
+    HASH((3. Verify password or identity proof))
+    ROLE((4. Resolve role assignments))
+    BRANCH((5. Resolve authorized branch context))
+    TOKEN((6. Issue short-lived signed JWT))
+    VERIFY((7. Verify JWT signature and claims))
+    PERM((8. Evaluate current permission mapping))
+    SCOPE((9. Check ownership, branch and assignment scope))
+    POLICY((10. Validate business-state policy))
+    API[Protected API operation]
+    DENY[401 / 403 / 409 response]
+    U[(Users)]
+    UR[(User Roles)]
+    RP[(Role Permissions)]
+    P[(Permissions)]
+    B[(Branches and User Branch Assignments)]
+    AUDIT[(Audit Logs)]
 
-    P1((1.1 Receive credentials))
-    P2((1.2 Validate input))
-    P3((1.3 Hash or verify password))
-    P4((1.4 Resolve authorized role))
-    P5((1.5 Issue signed JWT))
-    P6((1.6 Verify JWT and claims))
-    P7((1.7 Check permissions))
-
-    D1[(Users)]
-    D2[(Roles and User Roles)]
-    D3[(Permissions and Role Permissions)]
-    API[Protected API endpoint]
-
-    U --> UI
-    UI -->|Registration or login| P1
-    P1 --> P2
-    P2 -->|Valid input| P3
-    P3 <-->|Password hash| D1
-    P3 -->|Verified identity| P4
-    P4 <--> D2
-    P4 --> P5
-    P5 -->|Access token| UI
-
-    UI -->|Bearer token| P6
-    P6 -->|Verified identity and claims| P7
-    P7 <--> D3
-    P7 -->|Allowed| API
-    P7 -->|Denied| UI
+    CLIENT --> LOGIN --> VALID
+    VALID <--> U
+    VALID --> HASH
+    HASH --> ROLE
+    ROLE <--> UR
+    ROLE --> BRANCH
+    BRANCH <--> B
+    BRANCH --> TOKEN
+    TOKEN -->|Access token| CLIENT
+    CLIENT -->|Bearer token| VERIFY
+    VERIFY --> PERM
+    PERM <--> RP
+    RP <--> P
+    PERM --> SCOPE
+    SCOPE -->|Record and branch policy| API
+    API --> POLICY
+    POLICY -->|Allowed| AUDIT
+    POLICY -->|Rejected| DENY
+    VERIFY -->|Invalid token| DENY
+    PERM -->|Missing permission| DENY
+    SCOPE -->|Out of scope| DENY
 ```
 
-**Controls:** Public registration assigns only the `customer` role. Staff/admin accounts are provisioned through an authorized process. JWT signature, algorithm, issuer, audience and expiry are verified. Client-supplied roles are never trusted.
+### Seven standard roles
+
+- CUSTOMER — own profile, orders, reservations and bills.
+- WAITER — assigned tables, permitted order operations, kitchen dispatch and serving.
+- RECEPTIONIST — reservations, check-in, walk-ins and table allocation.
+- CAPTAIN — floor supervision, waiter assignment and service coordination.
+- CASHIER — billing, split tenders, receipts and authorized refunds.
+- MANAGER — operational staff, branch-scoped reports, inventory and expenses.
+- ADMIN — user/role/permission administration, settings, integrations and security.
+
+Public registration always assigns CUSTOMER. Admin may customize permission mappings for these seven protected predefined roles. Manager cannot edit role permissions or grant Admin.
 
 ## Level 2 — Online customer order
 
 ```mermaid
 flowchart TD
-    C[Customer]
-    UI[Customer Website]
-
-    P1((3.1 Submit cart))
-    P2((3.2 Validate menu items))
-    P3((3.3 Calculate server-side prices))
-    P4((3.4 Create order transaction))
-    P5((3.5 Initiate online payment))
-    P6((3.6 Verify gateway webhook))
-    P7((3.7 Update payment and order state))
-    P8((3.8 Notify customer))
-
-    D1[(Menu Items)]
-    D2[(Orders)]
-    D3[(Order Item Snapshots)]
-    D4[(Payments)]
-
-    PG[Payment Gateway]
-    N[Notification Service]
-
-    C --> UI
-    UI --> P1
-    P1 --> P2
-    P2 <--> D1
-    P2 --> P3
-    P3 --> P4
-    P4 -->|Atomic write| D2
-    P4 -->|Historical item and price snapshot| D3
-    P4 --> P5
-    P5 <-->|Gateway payment request| PG
-    PG -->|Signed webhook| P6
-    P6 -->|Verified amount, currency and reference| P7
-    P7 --> D4
-    P7 --> D2
-    P7 --> P8
-    P8 --> N
-    P8 -->|Order confirmation| UI
+    C[Customer] --> UI[Customer Website]
+    UI --> AUTH[Authenticate and verify Customer role]
+    AUTH --> OWN[Validate customer ownership and request]
+    OWN --> MENU[Reload menu availability and prices]
+    MENU <--> D1[(Menu)]
+    MENU --> TX[Create order transaction]
+    TX --> O[(Orders)]
+    TX --> I[(Immutable Order Item Snapshots)]
+    TX --> PAY[Create payment intent]
+    PAY <--> PG[Payment Provider]
+    PG --> WH[Verify signed webhook]
+    WH --> IDEM[Idempotency and amount/currency/reference checks]
+    IDEM --> P[(Payments)]
+    IDEM --> O
+    O --> N[Notify customer and operational clients]
 ```
 
-The frontend redirect is not proof of payment. The backend verifies the gateway webhook signature and transaction details before recording a successful payment. Webhook processing must be idempotent.
+Client-submitted prices are never authoritative. Browser redirect is not proof of payment. Webhook processing is verified and idempotent.
 
-## Level 2 — Offline POS and billing
+## Level 2 — POS, table and billing workflow
 
 ```mermaid
 flowchart TD
-    POS1[Staff POS Device 1]
-    POS2[Staff POS Device 2]
-    POSN[Staff POS Device N]
-
-    P1((4.1 Authenticate staff and device))
-    P2((4.2 Select order type))
-    P3((4.3 Check and allocate table))
-    P4((4.4 Create POS order))
-    P5((4.5 Create kitchen ticket))
-    P6((4.6 Record offline tender))
-    P7((4.7 Generate invoice))
-    P8((4.8 Complete table session))
-
-    D1[(Users, Roles and Devices)]
-    D2[(Restaurant Tables)]
-    D3[(Orders and Order Items)]
-    D4[(Kitchen Tickets)]
-    D5[(Payments)]
-    D6[(Invoices)]
-    D7[(Table Sessions)]
-
-    K[Kitchen Display]
-    LIVE[Other POS Clients]
-
-    POS1 --> P1
-    POS2 --> P1
-    POSN --> P1
-    P1 <--> D1
-    P1 --> P2
-
-    P2 -->|Dine-in| P3
-    P2 -->|Takeaway or walk-in| P4
-    P3 <--> D2
-    P3 -->|Transactional allocation| P4
-
-    P4 --> D3
-    P4 --> P5
-    P5 --> D4
-    P5 --> K
-
-    P4 --> P6
-    P6 --> D5
-    P6 --> P7
-    P7 --> D6
-
-    P7 -->|Bill| POS1
-    P7 -->|Bill| POS2
-    P7 -->|Bill| POSN
-
-    P7 --> P8
-    P8 --> D7
-    P8 -->|Release table after session completion| D2
-
-    D3 -->|Persisted state change events| LIVE
+    W[Waiter / Captain] --> AUTH[Authenticate, device and branch checks]
+    AUTH --> ASSIGN[Check table/order assignment and permission]
+    ASSIGN --> TYPE[Select dine-in / takeaway / walk-in]
+    TYPE --> TABLE[Check and allocate table transactionally]
+    TABLE <--> T[(Tables)]
+    TYPE --> ORDER[Create or modify permitted order]
+    TABLE --> ORDER
+    ORDER --> O[(Orders and Item Snapshots)]
+    ORDER --> K[Create kitchen ticket]
+    K --> KT[(Kitchen Tickets)]
+    K --> DISPLAY[Kitchen Display]
+    CA[Cashier] --> CASH[Cashier permission and branch check]
+    CASH --> BILL[Generate or split bill]
+    BILL --> INV[(Invoices)]
+    BILL --> TENDER[Collect and record payment]
+    TENDER --> PAY[(Payments)]
+    TENDER --> REFUND[Separate authorized refund workflow]
+    REFUND --> PAY
+    PAY --> CLOSE[Complete session under closure policy]
+    CLOSE --> TS[(Table Sessions)]
+    CLOSE --> T
+    O --> EVENTS[Post-commit events to other POS devices]
 ```
 
-**Concurrency controls:** Use transactions and row-level locking or equivalent constraints for table allocation. Use idempotency keys for retried requests and unique constraints for invoice and payment references. WebSocket events notify other POS clients after the database transaction commits.
+Waiter/Captain order entry and Cashier billing/payment are separate capabilities. Do not expose a single generic POS screen as equivalent access for all staff roles.
 
 ## Level 2 — Reservation workflow
 
 ```mermaid
 flowchart TD
-    C[Customer]
-    UI[Reservation Interface]
-
-    P1((5.1 Submit date, time and party size))
-    P2((5.2 Validate reservation request))
-    P3((5.3 Check table and booking availability))
-    P4((5.4 Create reservation))
-    P5((5.5 Staff confirms or rejects))
-    P6((5.6 Seat guest and start table session))
-    P7((5.7 Complete reservation))
-
-    D1[(Reservations)]
-    D2[(Restaurant Tables)]
-    D3[(Table Sessions)]
-
-    S[Staff / Admin]
-    N[Notification Service]
-
-    C --> UI
-    UI --> P1
-    P1 --> P2
-    P2 --> P3
-    P3 <--> D1
-    P3 <--> D2
-    P3 -->|Available slots| UI
-
-    UI -->|Booking request| P4
-    P4 --> D1
-    P4 --> N
-
-    S -->|Confirm or reject| P5
-    P5 <--> D1
-    P5 --> N
-
-    S -->|Guest arrives| P6
-    P6 --> D3
-    P6 --> D2
-
-    P6 --> P7
-    P7 --> D1
-    P7 --> D2
+    C[Customer] --> REQ[Submit date, time, party size]
+    R[Receptionist] --> REQ
+    REQ --> AUTH[Permission, branch and ownership checks]
+    AUTH --> AVAIL[Check capacity and booking conflicts]
+    AVAIL <--> RES[(Reservations)]
+    AVAIL <--> TABLE[(Tables)]
+    AVAIL --> TX[Transactional availability recheck and booking write]
+    TX --> RES
+    TX --> CONF[Confirmation policy]
+    CONF --> NOTIFY[Customer notification]
+    G[Guest arrives] --> CHECKIN[Receptionist check-in]
+    CHECKIN --> ALLOC[Allocate table]
+    ALLOC --> SESSION[Start dining session]
+    SESSION --> TS[(Table Sessions)]
+    SESSION --> TABLE
 ```
 
-Availability must be rechecked during the transactional write, not only during the earlier availability lookup. A confirmed reservation does not make a table occupied; the actual dining session does.
+A confirmed reservation does not itself occupy a table. Actual occupancy starts with a dining session. Availability must be rechecked inside the booking transaction.
 
-## Level 2 — Payment workflow
+## Level 2 — Payment and refund workflow
 
 ```mermaid
 flowchart TD
-    O[Order Service]
-    POS[POS Service]
-
-    P1((6.1 Receive payment request))
-    P2((6.2 Validate order and amount))
-    P3((6.3 Select payment method))
-    P4((6.4 Process online payment))
-    P5((6.5 Record POS tender))
-    P6((6.6 Verify gateway result))
-    P7((6.7 Record payment state))
-    P8((6.8 Update order financial state))
-
-    D1[(Orders)]
-    D2[(Payments)]
-    D3[(Invoices)]
-
-    PG[Payment Gateway]
-    N[Notification Service]
-
-    O --> P1
-    POS --> P1
-    P1 --> P2
-    P2 <--> D1
-    P2 --> P3
-
-    P3 -->|Online| P4
-    P3 -->|Cash, UPI or card at POS| P5
-
-    P4 <-->|Payment request| PG
-    PG -->|Signed webhook| P6
-    P5 --> D2
-    P6 --> P7
-    P5 --> P7
-    P7 --> D2
-    P7 --> P8
-    P8 --> D1
-    P8 --> D3
-    P8 --> N
+    ORDER[Order / Bill] --> REQ[Payment request]
+    REQ --> VALID[Validate amount, currency, branch and payable state]
+    VALID --> METHOD{Payment method}
+    METHOD -->|Online| GATEWAY[Provider adapter]
+    GATEWAY --> WEBHOOK[Verify signed provider webhook]
+    METHOD -->|Cash / POS UPI / Card| TENDER[Cashier records tender]
+    WEBHOOK --> IDEM[Idempotency and unique provider reference]
+    TENDER --> IDEM
+    IDEM --> PAY[(Payments)]
+    PAY --> STATE[Update invoice and order financial state]
+    STATE --> AUDIT[(Audit Logs)]
+    REFUND[Refund request] --> INIT[Check payments.refund]
+    INIT --> APPROVE[Independent approval if policy requires]
+    APPROVE --> PROVIDER[Provider refund or POS reversal workflow]
+    PROVIDER --> PAY
+    PROVIDER --> AUDIT
 ```
 
-The payment service should expose a provider-neutral adapter interface. Provider selection (Razorpay, Zoho Payments or Cashfree) remains a separate commercial and technical decision. Offline tender records and online gateway transactions should share a consistent payment domain model without pretending they have identical verification flows.
+Keep the payment provider behind an adapter. Razorpay, Zoho Payments and Cashfree remain candidates. Online gateway verification and offline tender recording are distinct flows.
 
----
+## Level 2 — Branch and resource authorization
+
+```mermaid
+flowchart TD
+    REQ[Authenticated API request] --> USER[Load active user and role assignments]
+    USER --> BRANCH[Resolve selected branch]
+    BRANCH --> CHECK{Branch explicitly assigned?}
+    CHECK -->|No| DENY[403 Forbidden]
+    CHECK -->|Yes| PERM{Required permission granted?}
+    PERM -->|No| DENY
+    PERM -->|Yes| RESOURCE{Resource policy}
+    RESOURCE --> OWN[Customer owns record]
+    RESOURCE --> ASSIGNED[Staff assigned to table/order/task]
+    RESOURCE --> MANAGER[Manager has branch scope]
+    RESOURCE --> ADMIN[Admin global scope]
+    OWN --> POLICY[Business-state validation]
+    ASSIGNED --> POLICY
+    MANAGER --> POLICY
+    ADMIN --> POLICY
+    POLICY -->|Valid| SERVICE[Execute service transaction]
+    POLICY -->|Invalid| CONFLICT[409 Conflict]
+```
+
+Global access is reserved for explicitly authorized Admin operations. Manager reports and staff management are branch-scoped. Waiter access is assignment-scoped. Customer records are ownership-scoped.
 
 ## Cross-cutting data-flow rules
 
-- **PostgreSQL is authoritative:** WebSocket messages are notifications, not durable records.
-- **Server-calculated totals:** Never trust prices, discounts, taxes or totals supplied by a browser/POS client without server-side validation.
-- **Atomic operations:** Orders, table allocation, inventory deductions and payment state changes require appropriate transactions and constraints.
-- **Idempotency:** Design retry-safe order creation, payment initiation and webhook processing.
-- **Auditability:** Record sensitive administrative and financial state changes with actor, action, target and timestamp.
-- **Branch context:** Scope operational queries and authorization to the active branch once branch support is finalized.
-- **Privacy:** Avoid placing secrets or unnecessary personal/payment data in tokens, events or logs.
+- PostgreSQL is authoritative; browser storage and WebSocket events are not.
+- Validate permissions and data scope on every protected request.
+- Use server-calculated prices, discounts, tax and totals.
+- Use transactions and concurrency controls for tables, reservations, inventory and payments.
+- Use idempotency for retryable writes and gateway webhooks.
+- Audit sensitive security, staff and financial changes.
+- Persist state before publishing real-time events.
+- Scope operational records and reports by branch.
+- Do not log passwords, tokens, payment secrets or unnecessary personal data.
 
 ## Implementation order
 
-1. Verify the existing ER diagram and finalize the relational schema.
-2. Establish backend foundation, PostgreSQL configuration and migrations.
-3. Implement authentication and RBAC.
-4. Implement menu and customer APIs.
-5. Implement orders, POS, tables and billing.
-6. Implement payment adapters and webhook verification.
-7. Implement reservations and kitchen workflows.
-8. Implement reporting, audit, tests and production operations.
+1. Review the existing ER diagram and finalize relational schema.
+2. Establish PostgreSQL/Prisma foundation and migrations.
+3. Implement authentication and seven-role RBAC.
+4. Implement branch, ownership and assignment policies.
+5. Implement menu, customer and order modules.
+6. Implement reservation, table, POS and kitchen workflows.
+7. Separate Cashier billing/payment/refund operations.
+8. Implement Manager reporting, inventory and expenses.
+9. Integrate frontend role-aware workspaces and API authorization context.
+10. Complete security, concurrency, integration and production-readiness tests.
