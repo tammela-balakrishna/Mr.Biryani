@@ -481,3 +481,20 @@ Suggested feature folder: `src/features/chat/` with screen/components, typed API
 Implementation phases: shared API contract → chat UI shell → public FAQ/menu pilot → authenticated owner-scoped status tools → evaluation and staged rollout. Full backend architecture, schema proposal, threat model and acceptance criteria: [RAG chatbot architecture](../backend/docs/rag-chatbot-architecture.md).
 
 **Status:** specification only. No mobile chat screen or RAG backend is claimed implemented.
+
+
+## AI assistant / RAG integration — documentation only
+
+**Implementation status: planned. No React Native chatbot code, screens, packages or native configuration are included.**
+
+The future mobile assistant will consume the same shared backend chat API as the React website; it must not connect directly to PostgreSQL, a vector store or an LLM provider. The proposed API contract and RAG data flow are documented in [backend RAG architecture](../backend/docs/rag-chatbot-architecture.md).
+
+Mobile integration requirements for a later phase:
+- Add a native chat screen or reusable assistant entry point only after the backend endpoint is implemented and approved.
+- Use the shared API client, secure session handling and backend authorization; never embed model-provider API keys in the app.
+- Send locale and authenticated session context through the approved API contract; do not send trusted role or branch claims from client-controlled fields.
+- Render answer text, source citations, loading/error states and a clear fallback to restaurant staff.
+- Treat assistant output as informational. Transactional actions must route to existing authenticated order, reservation or payment workflows and require their normal confirmations.
+- Respect mobile accessibility, screen-reader labels, keyboard behavior, network timeouts, retry limits and privacy/retention policy.
+
+Do not build a separate mobile RAG service, embedding pipeline, vector database or model integration. The mobile app remains a client of the single shared backend.
