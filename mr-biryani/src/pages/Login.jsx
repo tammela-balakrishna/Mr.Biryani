@@ -40,8 +40,9 @@ function Login() {
       setError('Incorrect OTP. Use the demo OTP shown below.')
       return
     }
-    loginMockUser(phone)
-    navigate(location.state?.from || '/', { replace: true })
+    const user = loginMockUser(phone)
+    const destination = location.state?.from || (user.role === 'admin' ? '/admin' : user.role === 'staff' ? '/staff/pos' : '/')
+    navigate(destination, { replace: true })
   }
 
   const inputClass = 'w-full bg-transparent px-3 py-3.5 text-sm text-white outline-none placeholder:text-neutral-600'
