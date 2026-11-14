@@ -1,0 +1,65 @@
+spring:
+  application:
+    name: mr-biryani-backend
+  # Local development: values in backend/.env (KEY=value) are picked up automatically.
+  config:
+    import: optional:file:.env[.properties]
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/mrbiryani}
+    username: ${DATABASE_USERNAME:mrbiryani}
+    password: ${DATABASE_PASSWORD:mrbiryani}
+  flyway:
+    enabled: true
+  jackson:
+    default-property-inclusion: non_null
+
+server:
+  port: ${PORT:8080}
+  error:
+    include-stacktrace: never
+  forward-headers-strategy: ${FORWARD_HEADERS_STRATEGY:none}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:}
+    issuer: ${JWT_ISSUER:mr-biryani-api}
+    audience: ${JWT_AUDIENCE:mr-biryani-clients}
+    access-token-ttl: ${ACCESS_TOKEN_TTL:15m}
+  refresh-token-ttl: ${REFRESH_TOKEN_TTL:14d}
+  cors-origins: ${CORS_ORIGINS:http://localhost:5173}
+  cookie-secure: ${COOKIE_SECURE:false}
+  auth-rate-limit-per-window: ${AUTH_RATE_LIMIT:20}
+  seed:
+    admin-email: ${SEED_ADMIN_EMAIL:}
+    admin-password: ${SEED_ADMIN_PASSWORD:}
+    branch-code: ${SEED_BRANCH_CODE:MAIN}
+    branch-name: ${SEED_BRANCH_NAME:Main Branch}
+
+springdoc:
+  api-docs:
+    enabled: ${API_DOCS_ENABLED:true}
+  swagger-ui:
+    enabled: ${API_DOCS_ENABLED:true}
+
+# Assistant (step 14). Model key comes from the server environment only.
+app.chat.enabled: ${CHAT_ENABLED:true}
+app.chat.llm.api-key: ${ANTHROPIC_API_KEY:}
+app.chat.llm.model: ${CHAT_MODEL:claude-sonnet-5-5}
+
+# Zoho Payments (test mode first). All values come from the environment; the defaults are blank,
+# so online payment stays disabled until the sandbox credentials are supplied.
+app.payments.zoho.base-url: ${ZOHO_PAYMENTS_BASE_URL:https://paymentssandbox.zoho.in}
+app.payments.zoho.account-id: ${ZOHO_PAYMENTS_ACCOUNT_ID:}
+app.payments.zoho.access-token: ${ZOHO_PAYMENTS_ACCESS_TOKEN:}
+app.payments.zoho.success-url: ${ZOHO_PAYMENTS_SUCCESS_URL:}
+app.payments.zoho.failure-url: ${ZOHO_PAYMENTS_FAILURE_URL:}
+app.payments.zoho.webhook-secret: ${ZOHO_PAYMENTS_WEBHOOK_SECRET:}

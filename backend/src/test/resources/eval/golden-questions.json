@@ -1,0 +1,11 @@
+[
+  {"question": "What is your cancellation policy?", "expectKind": "PUBLIC_KNOWLEDGE", "expectTitle": "Cancellation policy", "mustNotContain": null},
+  {"question": "Can I cancel my order after the kitchen accepted it?", "expectKind": "PUBLIC_KNOWLEDGE", "expectTitle": "Cancellation policy", "mustNotContain": null},
+  {"question": "When are you open?", "expectKind": "PUBLIC_KNOWLEDGE", "expectTitle": "Opening hours", "mustNotContain": null},
+  {"question": "Do you deliver near me?", "expectKind": "PUBLIC_KNOWLEDGE", "expectTitle": "Delivery area", "mustNotContain": null},
+  {"question": "How is your ginger prepared?", "expectKind": "PUBLIC_KNOWLEDGE", "expectTitle": "Kitchen note", "mustNotContain": null},
+  {"question": "Tell me about the secret saffron zebra blend", "expectKind": "ABSTAIN", "expectTitle": null, "mustNotContain": "zebra"},
+  {"question": "Do you have a helicopter landing pad?", "expectKind": "ABSTAIN", "expectTitle": null, "mustNotContain": null},
+  {"question": "What is my order status?", "expectKind": "LOGIN_REQUIRED", "expectTitle": null, "mustNotContain": null},
+  {"question": "What is the status of my reservation?", "expectKind": "LOGIN_REQUIRED", "expectTitle": null, "mustNotContain": null}
+]

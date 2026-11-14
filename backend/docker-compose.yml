@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: mrbiryani
+      POSTGRES_PASSWORD: mrbiryani
+      POSTGRES_DB: mrbiryani
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mrbiryani -d mrbiryani"]
+      interval: 5s
+      retries: 20
+
+  api:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/mrbiryani
+      DATABASE_USERNAME: mrbiryani
+      DATABASE_PASSWORD: mrbiryani
+    ports:
+      - "8080:8080"
+
+volumes:
+  pgdata:
