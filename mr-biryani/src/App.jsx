@@ -2,6 +2,7 @@ import { Routes, Route, Link, useLocation } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import ScrollToTop from './components/ScrollToTop'
+import ProtectedRoute from './components/ProtectedRoute'
 import Home from './pages/Home'
 import Menu from './pages/Menu'
 import About from './pages/About'
@@ -13,16 +14,20 @@ import Contact from './pages/Contact'
 import Profile from './pages/Profile'
 import OrderHistory from './pages/OrderHistory'
 import Reservations from './pages/Reservations'
-import AdminDashboard from './pages/AdminDashboard'
-import StaffPOS from './pages/StaffPOS'
-import RoleWorkspace from './pages/RoleWorkspace'
 
 function NotFound() {
  return <main className="flex min-h-[70vh] items-center justify-center bg-[#080808] px-5 py-24 text-center"><div className="max-w-xl"><p className="mb-5 text-sm font-bold uppercase tracking-[5px] text-[#D4A63A]">MR. BIRIYANI</p><h1 className="font-serif text-8xl font-bold text-[#D4A63A]">404</h1><h2 className="mt-5 text-3xl font-bold">Page Not Found</h2><p className="mt-4 text-neutral-400">The page you are looking for may have been moved or does not exist.</p><Link to="/" className="mt-9 inline-flex rounded-full bg-[#D4A63A] px-8 py-3.5 font-bold text-black">Back to Home</Link></div></main>
 }
+
 function App() {
  const location=useLocation()
  const authPage=['/login','/register'].includes(location.pathname)
- return <div className="flex min-h-screen flex-col bg-[#080808] text-white"><ScrollToTop/>{!authPage&&<Navbar/>}<div key={location.pathname} className="flex-1"><Routes><Route path="/" element={<Home/>}/><Route path="/menu" element={<Menu/>}/><Route path="/about" element={<About/>}/><Route path="/gallery" element={<Gallery/>}/><Route path="/order" element={<Order/>}/><Route path="/login" element={<Login/>}/><Route path="/register" element={<Register/>}/><Route path="/contact" element={<Contact/>}/><Route path="/profile" element={<Profile/>}/><Route path="/orders" element={<OrderHistory/>}/><Route path="/reservations" element={<Reservations/>}/><Route path="/admin" element={<AdminDashboard/>}/><Route path="/staff/pos" element={<StaffPOS/>}/><Route path="/workspace" element={<RoleWorkspace/>}/><Route path="*" element={<NotFound/>}/></Routes></div>{!authPage&&<Footer/>}</div>
+ return <div className="flex min-h-screen flex-col bg-[#080808] text-white"><ScrollToTop/>{!authPage&&<Navbar/>}<div key={location.pathname} className="flex-1"><Routes><Route path="/" element={<Home/>}/><Route path="/menu" element={<Menu/>}/><Route path="/about" element={<About/>}/><Route path="/gallery" element={<Gallery/>}/><Route path="/order" element={<Order/>}/><Route path="/login" element={<Login/>}/><Route path="/register" element={<Register/>}/><Route path="/contact" element={<Contact/>}/><Route path="/profile" element={<Profile/>}/><Route path="/orders" element={<OrderHistory/>}/><Route path="/reservations" element={<Reservations/>}/><Route path="/admin" element={<ProtectedRoute permission="roles.manage"><AdminPlaceholder/></ProtectedRoute>}/><Route path="*" element={<NotFound/>}/></Routes></div>{!authPage&&<Footer/>}</div>
 }
+
+// Admin screens are not connected yet (see README: step 11 remaining). The route only shows that the page is pending.
+function AdminPlaceholder() {
+ return <main className="flex min-h-[60vh] items-center justify-center bg-[#080808] px-5 py-20 text-center text-white"><div><h1 className="font-serif text-3xl font-bold">Admin <span className="text-[#D4A63A]">console</span></h1><p className="mt-4 max-w-md text-neutral-400">Role and permission management is available through the API. The admin screens are not built yet.</p></div></main>
+}
+
 export default App

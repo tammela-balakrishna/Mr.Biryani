@@ -1,10 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { addToCart } from '../utils/cart'
+import { api } from '../api/client'
 import { MotionStyles, Reveal, SafeImg } from '../components/Motion'
 
-// Restored Original Categories
-const categories = ['Biryani', 'Family Pack', 'Starters']
 
 const base = 'https://images.unsplash.com'
 const images = {
@@ -16,101 +15,41 @@ const images = {
 }
 
 /* Extra photos so cards in one category are not all identical */
-const biryaniAlt = `${base}/photo-1633945274405-b6c8069047b0?auto=format&fit=crop&w=700&q=85`
-
-// Restored Original Data
-const singleBiryani = [
-  ['Hyderabadi Dum Biryani', 170],
-  ['Mr. Biryani Special', 200],
-  ['Fry-Piece Chicken Biryani', 180],
-  ['Guntur Chicken Biryani', 180],
-  ['Nellore Chicken Biryani', 180],
-  ['Andhra Style Chicken Biryani', 180],
-  ['Rainbow Chicken Biryani', 210],
-  ['Mughlai Chicken Biryani', 200],
-  ['Wings Chicken Biryani', 180],
-  ['Lollipop Chicken Biryani', 180],
-  ['Mutton Biryani', 240],
-  ['Fish Biryani', 220],
-  ['Prawns Biryani', 240],
-  ['Egg Biryani', 130],
-  ['Paneer Biryani', 160],
-  ['Mushroom Biryani', 140],
-  ['Biryani Rice', 110],
-]
-
-const familyBiryani = [
-  ['Hyderabadi Dum Biryani', 460],
-  ['Mr. Biryani Special', 550],
-  ['Fry-Piece Chicken Biryani', 490],
-  ['Guntur Chicken Biryani', 490],
-  ['Nellore Chicken Biryani', 490],
-  ['Andhra Style Chicken Biryani', 490],
-  ['Rainbow Chicken Biryani', 570],
-  ['Mughlai Chicken Biryani', 550],
-  ['Wings Chicken Biryani', 490],
-  ['Lollipop Chicken Biryani', 490],
-  ['Mutton Biryani', 670],
-  ['Fish Biryani', 610],
-  ['Prawns Biryani', 670],
-]
-
-const starters = [
-  ['Andhra Chicken Fry', 180],
-  ['Guntur Chicken Fry', 180],
-  ['Nellore Chicken Fry', 180],
-  ['Kakinada Chicken Fry', 180],
-  ['Andhra Chilly Chicken', 180],
-  ['Chicken Ghee Roast', 180],
-  ['Kshatriya Chicken Wings', 180],
-  ['Andhra Special Chicken Fry', 180],
-  ['Andhra Mutton Fry', 200],
-  ['Mutton Ghee Roast', 240],
-  ['Mutton Pepper Dry', 240],
-  ['Andhra Fish Fry', 220],
-  ['Apollo Fish Fry', 220],
-  ['Andhra Prawns Fry', 240],
-  ['Prawns Ghee Roast', 240],
-]
-
-const menuItems = [
-  ...singleBiryani.map(([name, price], index) => ({
-    id: `biryani-${index}`,
-    name,
-    price,
-    category: 'Biryani',
-    subtitle: 'Single Serving',
-    image: index % 2 === 0 ? images.biryani : biryaniAlt,
-  })),
-  ...familyBiryani.map(([name, price], index) => ({
-    id: `family-${index}`,
-    name,
-    price,
-    category: 'Family Pack',
-    subtitle: 'Serves 3–4 Persons',
-    image: index % 2 === 0 ? images.family : images.biryani,
-  })),
-  ...starters.map(([name, price], index) => ({
-    id: `starter-${index}`,
-    name,
-    price,
-    category: 'Starters',
-    subtitle: 'Non-Veg Starter',
-    image: images.starters,
-  })),
-]
+// Category images are chosen by name; everything else comes from the live menu API.
+const imageFor = (name) => (/family/i.test(name) ? images.family : /starter/i.test(name) ? images.starters : images.biryani)
 
 function Menu() {
-  const [activeCategory, setActiveCategory] = useState('Biryani')
+  const [activeCategory, setActiveCategory] = useState('')
+  const [menu, setMenu] = useState([])
+  const [loadError, setLoadError] = useState('')
   const navigate = useNavigate()
 
-  const filteredItems = useMemo(
-    () => menuItems.filter((item) => item.category === activeCategory),
-    [activeCategory],
-  )
+  useEffect(() => {
+    api.get('/api/v1/menu')
+      .then((data) => {
+        setMenu(data.categories)
+        setActiveCategory(data.categories[0]?.name || '')
+      })
+      .catch(() => setLoadError('Could not load the menu. Please try again shortly.'))
+  }, [])
+
+  const categories = menu.map((category) => category.name)
+
+  const filteredItems = useMemo(() => {
+    const category = menu.find((c) => c.name === activeCategory)
+    return (category?.items || []).map((item) => ({
+      id: item.id,
+      name: item.name,
+      subtitle: item.description || '',
+      price: item.price,
+      image: imageFor(activeCategory),
+      category: activeCategory,
+      available: item.available,
+    }))
+  }, [menu, activeCategory])
 
   const handleAddToCart = (item) => {
-    addToCart(item)
+    addToCart({ id: item.id, name: item.name, price: item.price })
     navigate('/order')
   }
 
@@ -175,6 +114,7 @@ function Menu() {
         </Reveal>
       </section>
 
+      {loadError && <p role="alert" className="mx-auto mt-6 max-w-md rounded-lg bg-red-500/15 p-3 text-center text-sm text-red-200">{loadError}</p>}
       {/* Menu Grid */}
       <section className="max-w-6xl mx-auto px-4 pb-20 relative z-10">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 mt-6">
@@ -208,10 +148,10 @@ function Menu() {
 
                   <button
                     type="button"
-                    onClick={() => handleAddToCart(item)}
+                    disabled={!item.available} onClick={() => handleAddToCart(item)}
                     className="bg-[#FFD700] hover:bg-[#E6C200] text-black font-bold text-sm px-6 py-2 rounded-full transition-colors w-max mt-auto shadow-sm"
                   >
-                    Add +
+                    {item.available ? 'Add +' : 'Unavailable'}
                   </button>
                 </div>
               </article>

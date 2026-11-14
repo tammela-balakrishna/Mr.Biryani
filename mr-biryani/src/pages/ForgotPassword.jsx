@@ -14,7 +14,10 @@ import {
 } from 'lucide-react'
 
 import Brand from '../components/Brand'
-import { resetPassword } from '../utils/auth'
+// Password reset by email is not implemented on the server yet.
+const resetPassword = () => {
+  throw new Error('Password reset is not available yet. Please contact the restaurant.')
+}
 
 function ForgotPassword() {
   const navigate = useNavigate()
