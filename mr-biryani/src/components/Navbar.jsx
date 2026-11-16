@@ -6,7 +6,7 @@ import Button from './Button'
 import { useAuth } from '../auth/AuthContext'
 import { getCart } from '../utils/cart'
 
-const navLinks = [['Home', '/'], ['Menu', '/menu'], ['About', '/about'], ['Gallery', '/gallery'], ['Contact', '/contact'], ['Reviews', '/reviews'], ['Reserve a Table', '/reservations']]
+const navLinks = [['Home', '/'], ['Menu', '/menu'], ['About', '/about'], ['Gallery', '/gallery'], ['Branches', '/branches'], ['Contact', '/contact'], ['Reviews', '/reviews'], ['Reserve a Table', '/reservations']]
 
 function Navbar() {
   const [open, setOpen] = useState(false)

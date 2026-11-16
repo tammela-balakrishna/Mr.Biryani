@@ -21,6 +21,7 @@ const quickLinks = [
   { name: 'Our Menu', path: '/menu' },
   { name: 'About Us', path: '/about' },
   { name: 'Gallery', path: '/gallery' },
+  { name: 'Our Branches', path: '/branches' },
   { name: 'Customer Reviews', path: '/reviews' },
   { name: 'Contact Us', path: '/contact' },
 ]
@@ -144,7 +145,7 @@ function Footer() {
                 size={18}
               />
               <span className="text-neutral-400">
-                Contact restaurant for phone details
+                +91 88848 66644
               </span>
             </li>
 
@@ -178,7 +179,7 @@ function Footer() {
               </p>
 
               <p className="mt-2 text-sm leading-7 text-neutral-400">
-                Please contact the restaurant for current opening hours.
+                BTM Layout: 12:30 PM – 11:00 PM. All branch timings are on the Branches page.
               </p>
             </div>
           </div>

@@ -11,6 +11,7 @@ import Order from './pages/Order'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Contact from './pages/Contact'
+import Branches from './pages/Branches'
 import Reviews from './pages/Reviews'
 import Profile from './pages/Profile'
 import OrderHistory from './pages/OrderHistory'
@@ -28,7 +29,7 @@ const STAFF_ANY = ['tables.read', 'orders.read', 'billing.read', 'payments.colle
 function App() {
  const location=useLocation()
  const authPage=['/login','/register'].includes(location.pathname)
- return <div className="flex min-h-screen flex-col bg-[#080808] text-white"><ScrollToTop/>{!authPage&&<Navbar/>}<div key={location.pathname} className="flex-1"><Routes><Route path="/" element={<Home/>}/><Route path="/menu" element={<Menu/>}/><Route path="/about" element={<About/>}/><Route path="/gallery" element={<Gallery/>}/><Route path="/order" element={<Order/>}/><Route path="/login" element={<Login/>}/><Route path="/register" element={<Register/>}/><Route path="/contact" element={<Contact/>}/><Route path="/reviews" element={<Reviews/>}/><Route path="/profile" element={<Profile/>}/><Route path="/orders" element={<OrderHistory/>}/><Route path="/reservations" element={<Reservations/>}/><Route path="/staff" element={<ProtectedRoute anyOf={STAFF_ANY}><Staff/></ProtectedRoute>}/><Route path="/admin" element={<ProtectedRoute permission="roles.manage"><Admin/></ProtectedRoute>}/><Route path="*" element={<NotFound/>}/></Routes></div>{!authPage&&<Footer/>}</div>
+ return <div className="flex min-h-screen flex-col bg-[#080808] text-white"><ScrollToTop/>{!authPage&&<Navbar/>}<div key={location.pathname} className="flex-1"><Routes><Route path="/" element={<Home/>}/><Route path="/menu" element={<Menu/>}/><Route path="/about" element={<About/>}/><Route path="/gallery" element={<Gallery/>}/><Route path="/order" element={<Order/>}/><Route path="/login" element={<Login/>}/><Route path="/register" element={<Register/>}/><Route path="/contact" element={<Contact/>}/><Route path="/branches" element={<Branches/>}/><Route path="/reviews" element={<Reviews/>}/><Route path="/profile" element={<Profile/>}/><Route path="/orders" element={<OrderHistory/>}/><Route path="/reservations" element={<Reservations/>}/><Route path="/staff" element={<ProtectedRoute anyOf={STAFF_ANY}><Staff/></ProtectedRoute>}/><Route path="/admin" element={<ProtectedRoute permission="roles.manage"><Admin/></ProtectedRoute>}/><Route path="*" element={<NotFound/>}/></Routes></div>{!authPage&&<Footer/>}</div>
 }
 
 export default App
