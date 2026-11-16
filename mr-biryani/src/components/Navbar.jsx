@@ -39,7 +39,7 @@ function Navbar() {
 
   const accountLinks = (
     <>
-      {isStaff && <Link to="/staff" className="text-sm font-semibold text-[#D4A63A]">Staff</Link>}
+      {isAuthed && <Link to="/dashboard" className="text-sm font-semibold text-[#D4A63A]">Dashboard</Link>}
       {hasPermission('roles.manage') && <Link to="/admin" className="text-sm font-semibold text-[#D4A63A]">Admin</Link>}
       {isAuthed ? (
         <>

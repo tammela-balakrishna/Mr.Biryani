@@ -71,7 +71,7 @@ export default function Admin() {
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="font-serif text-3xl font-bold">Admin <span className="text-[#D4A63A]">console</span></h1>
-          <Link to="/staff" className="text-sm font-bold text-[#D4A63A]">Staff workspace →</Link>
+          <Link to="/dashboard" className="text-sm font-bold text-[#D4A63A]">My dashboard →</Link>
         </div>
         {error ? <p role="alert" className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p> : null}
         {notice ? <p role="status" className="rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2 text-sm text-green-300">{notice}</p> : null}

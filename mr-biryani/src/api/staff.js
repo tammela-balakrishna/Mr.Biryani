@@ -25,6 +25,8 @@ export const ordersApi = {
   receipt: (branchId, billId) => api.get(`${b(branchId)}/bills/${billId}/receipt`),
   pay: (branchId, billId, method, amount) =>
     api.post(`${b(branchId)}/bills/${billId}/payments`, { method, amount }, { 'Idempotency-Key': newIdempotencyKey() }),
+  requestRefund: (branchId, paymentId, amount, reason) =>
+    api.post(`${b(branchId)}/payments/${paymentId}/refunds`, { amount, reason }),
 }
 
 export const receptionApi = {
