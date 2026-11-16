@@ -52,9 +52,21 @@ public class FloorController {
     @PreAuthorize("hasAuthority('PERM_tables.read')")
     Map<String, Object> tables(@PathVariable UUID branchId) {
         branchAccess.require(branchId);
-        return Map.of("data", jdbc.sql("SELECT t.id, t.label, t.capacity, t.status, u.full_name AS waiter "
+        return Map.of("data", jdbc.sql("SELECT t.id, t.label, t.capacity, t.status, u.full_name AS waiter, "
+                + "u.id AS waiter_user_id "
                 + "FROM dining_tables t LEFT JOIN table_assignments a ON a.table_id = t.id AND a.active "
                 + "LEFT JOIN users u ON u.id = a.waiter_user_id WHERE t.branch_id = :b ORDER BY t.label")
+                .param("b", branchId).query().listOfRows());
+    }
+
+    /** Active waiters in this branch, for assigning tables. Needs only the floor-assignment permission, not staff access. */
+    @GetMapping("/waiters")
+    @PreAuthorize("hasAnyAuthority('PERM_tables.assign', 'PERM_floor.assign_waiter')")
+    Map<String, Object> waiters(@PathVariable UUID branchId) {
+        branchAccess.require(branchId);
+        return Map.of("data", jdbc.sql("SELECT u.id AS user_id, u.full_name FROM user_roles ur "
+                + "JOIN roles r ON r.id = ur.role_id JOIN users u ON u.id = ur.user_id "
+                + "WHERE ur.branch_id = :b AND ur.is_active AND r.code = 'WAITER' ORDER BY u.full_name")
                 .param("b", branchId).query().listOfRows());
     }
 

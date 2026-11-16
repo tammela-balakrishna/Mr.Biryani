@@ -29,7 +29,8 @@ export default function WaiterDashboard() {
     return () => clearInterval(id)
   }, [load])
 
-  const mine = tables.filter((t) => t.waiter && t.waiter === user?.fullName)
+  // Matched by account ID, so a name change or two people with the same name cannot mix up tables.
+  const mine = tables.filter((t) => t.waiter_user_id && t.waiter_user_id === user?.id)
   const ready = orders.filter((o) => o.status === 'READY').length
 
   const advance = async (order) => {

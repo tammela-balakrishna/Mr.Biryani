@@ -12,21 +12,24 @@ export default function CaptainDashboard() {
   const [tables, setTables] = useState([])
   const [orders, setOrders] = useState([])
   const [reservations, setReservations] = useState([])
+  const [waiters, setWaiters] = useState([])
   const [error, setError] = useState('')
+  const canAssign = hasPermission('tables.assign') || hasPermission('floor.assign_waiter')
 
   const load = useCallback(async () => {
     if (!branchId) return
     try {
-      const [t, o, r] = await Promise.all([
+      const [t, o, r, w] = await Promise.all([
         floorApi.tables(branchId),
         ordersApi.list(branchId),
         receptionApi.day(branchId, today()),
+        canAssign ? floorApi.waiters(branchId) : Promise.resolve([]),
       ])
-      setTables(t); setOrders(o); setReservations(r)
+      setTables(t); setOrders(o); setReservations(r); setWaiters(w)
     } catch (err) {
       setError(errorText(err, 'Could not load the floor.'))
     }
-  }, [branchId])
+  }, [branchId, canAssign])
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load()
@@ -60,10 +63,20 @@ export default function CaptainDashboard() {
               <div key={t.id} className={card}>
                 <p className="font-bold">{t.label} <span className="text-sm font-normal text-neutral-400">· {t.capacity} seats</span></p>
                 <p className="text-sm text-[#D4A63A]">{t.status}</p>
+                <p className="mt-1 text-xs text-neutral-400">{t.waiter ? `Waiter: ${t.waiter}` : 'No waiter assigned'}</p>
                 {hasPermission('tables.allocate') ? (
                   <div className="mt-2 flex flex-wrap gap-1">
                     {TABLE_STATUSES.filter((s) => s !== t.status).map((s) => (
                       <button key={s} className={ghost} onClick={() => act(() => floorApi.setTableStatus(branchId, t.id, s))}>{s}</button>
+                    ))}
+                  </div>
+                ) : null}
+                {canAssign && waiters.length > 0 ? (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {waiters.map((w) => (
+                      <button key={w.user_id} className={ghost} onClick={() => act(() => floorApi.assignWaiter(branchId, t.id, w.user_id))}>
+                        Assign {w.full_name}
+                      </button>
                     ))}
                   </div>
                 ) : null}

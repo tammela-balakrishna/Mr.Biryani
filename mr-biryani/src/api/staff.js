@@ -14,6 +14,7 @@ export const floorApi = {
   setTableStatus: (branchId, tableId, status) => api.patch(`${b(branchId)}/tables/${tableId}/status`, { status }),
   assignWaiter: (branchId, tableId, waiterUserId) => api.post(`${b(branchId)}/tables/${tableId}/assignment`, { waiterUserId }),
   staff: (branchId) => api.get(`${b(branchId)}/staff`),
+  waiters: (branchId) => api.get(`${b(branchId)}/tables/waiters`),
 }
 
 export const ordersApi = {
