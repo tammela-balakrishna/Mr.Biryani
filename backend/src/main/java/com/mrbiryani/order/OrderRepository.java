@@ -37,10 +37,15 @@ public class OrderRepository {
         this.jdbc = jdbc;
     }
 
-    public void insertOrder(UUID id, UUID branchId, UUID customerId, BigDecimal subtotal, BigDecimal tax,
+    /**
+     * Inserts the order unless the same customer already used this idempotency key. ON CONFLICT DO NOTHING
+     * keeps the transaction usable when a concurrent duplicate loses the race. Returns rows inserted (0 or 1).
+     */
+    public int insertOrder(UUID id, UUID branchId, UUID customerId, BigDecimal subtotal, BigDecimal tax,
             BigDecimal total, String idempotencyKey, String fingerprint) {
-        jdbc.sql("INSERT INTO orders (id, branch_id, customer_id, status, subtotal, tax_total, total, "
-                + "idempotency_key, request_fingerprint) VALUES (:id, :branch, :customer, 'PLACED', :sub, :tax, :total, :key, :fp)")
+        return jdbc.sql("INSERT INTO orders (id, branch_id, customer_id, status, subtotal, tax_total, total, "
+                + "idempotency_key, request_fingerprint) VALUES (:id, :branch, :customer, 'PLACED', :sub, :tax, :total, :key, :fp) "
+                + "ON CONFLICT (customer_id, idempotency_key) DO NOTHING")
                 .param("id", id).param("branch", branchId).param("customer", customerId)
                 .param("sub", subtotal).param("tax", tax).param("total", total)
                 .param("key", idempotencyKey).param("fp", fingerprint).update();

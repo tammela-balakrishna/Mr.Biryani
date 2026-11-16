@@ -152,8 +152,9 @@ public class BillingService {
     }
 
     public SalesReport sales(UUID branchId, LocalDate from, LocalDate to) {
-        Instant start = from.atStartOfDay().toInstant(ZoneOffset.UTC);
-        Instant end = to.plusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC);
+        java.time.ZoneId zone = java.time.ZoneId.of(jdbc.sql("SELECT timezone FROM branches WHERE id = :b").param("b", branchId).query(String.class).single());
+        Instant start = from.atStartOfDay(zone).toInstant();
+        Instant end = to.plusDays(1).atStartOfDay(zone).toInstant();
         BigDecimal gross = jdbc.sql("SELECT COALESCE(SUM(total), 0) FROM bills WHERE branch_id = :b AND status = 'PAID' "
                 + "AND created_at >= :s AND created_at < :e")
                 .param("b", branchId).param("s", java.sql.Timestamp.from(start)).param("e", java.sql.Timestamp.from(end))
@@ -174,6 +175,19 @@ public class BillingService {
                 .query((rs, i) -> Map.entry(rs.getString("method"), rs.getBigDecimal("amount")))
                 .list().forEach(e -> byMethod.put(e.getKey(), e.getValue()));
         return new SalesReport(from, to, count, gross, refunds, gross.subtract(refunds), byMethod);
+    }
+
+    /** Bills for a branch, newest first, optionally filtered to OPEN or PAID. Includes the amount paid so far. */
+    public List<Map<String, Object>> listBills(UUID branchId, String status) {
+        String filter = status == null ? "" : " AND b.status = :status";
+        var stmt = jdbc.sql("SELECT b.id AS id, b.order_id AS order_id, b.total AS total, b.status AS status, "
+                + "b.created_at AS created_at, COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.bill_id = b.id), 0) "
+                + "- COALESCE((SELECT SUM(r.amount) FROM refunds r JOIN payments q ON q.id = r.payment_id "
+                + "WHERE q.bill_id = b.id AND r.status = 'APPROVED'), 0) AS paid "
+                + "FROM bills b WHERE b.branch_id = :b" + filter + " ORDER BY b.created_at DESC LIMIT 200")
+                .param("b", branchId);
+        if (status != null) stmt = stmt.param("status", status);
+        return stmt.query().listOfRows();
     }
 
     /** Refunds in this branch with the given status (for the approval queue). */

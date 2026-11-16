@@ -4,18 +4,18 @@ import { useEffect, useRef, useState } from 'react'
 /* Save as src/components/Motion.jsx */
 
 /* Scroll reveal animation */
+// Shared hook exported alongside components on purpose; the lint rule is disabled for this line only.
+// eslint-disable-next-line react-refresh/only-export-components
 export function useReveal(threshold = 0.15) {
   const ref = useRef(null)
-  const [shown, setShown] = useState(false)
+  // Without IntersectionObserver (old browsers) content is shown immediately, decided at mount.
+  const [shown, setShown] = useState(() => typeof window !== 'undefined' && !('IntersectionObserver' in window))
 
   useEffect(() => {
     const element = ref.current
-    if (!element) return
+    if (!element || shown) return
 
-    if (!('IntersectionObserver' in window)) {
-      setShown(true)
-      return
-    }
+    if (!('IntersectionObserver' in window)) return
 
     const observer = new IntersectionObserver(
       ([entry]) => {

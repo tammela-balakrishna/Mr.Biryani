@@ -17,6 +17,10 @@ public class BranchLookup {
         this.jdbc = jdbc;
     }
 
+    public java.time.ZoneId zoneOf(UUID branchId) {
+        return java.time.ZoneId.of(jdbc.sql("SELECT timezone FROM branches WHERE id = :id").param("id", branchId).query(String.class).single());
+    }
+
     public UUID requireActive(UUID branchId) {
         boolean active = jdbc.sql("SELECT EXISTS (SELECT 1 FROM branches WHERE id = :id AND status = 'ACTIVE')")
                 .param("id", branchId).query(Boolean.class).single();

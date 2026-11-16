@@ -7,6 +7,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
@@ -203,6 +204,7 @@ public class ChatService {
         Deque<Instant> window = recent.computeIfAbsent(sessionId, k -> new ArrayDeque<>());
         synchronized (window) {
             while (!window.isEmpty() && window.peekFirst().isBefore(now.minus(Duration.ofHours(1)))) window.pollFirst();
+            if (recent.size() > 10_000) recent.keySet().retainAll(Set.of(sessionId)); // bound memory; windows restart
             if (window.size() >= MAX_MESSAGES_PER_HOUR) {
                 throw ApiException.tooManyRequests("Too many messages in this conversation; try again later");
             }

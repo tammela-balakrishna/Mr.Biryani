@@ -45,6 +45,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/chat/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/branches").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/payments/webhooks/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/enquiries", "/api/v1/reviews").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/reviews").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login",
                         "/api/v1/auth/refresh", "/api/v1/auth/logout").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/menu/**").permitAll()

@@ -40,6 +40,7 @@ public final class Permissions {
             "staff.read", "staff.create", "staff.update", "staff.disable", "staff.assign_responsibility",
             "inventory.read", "inventory.update", "inventory.adjust", "inventory.purchase.manage",
             "expenses.read", "expenses.create", "expenses.approve",
+            "feedback.read", "feedback.moderate",
             "reports.sales.read", "reports.revenue.read", "reports.inventory.read",
             "reports.staff_performance.read", "reports.export",
             "users.manage", "roles.manage", "roles.permissions.update", "permissions.manage",

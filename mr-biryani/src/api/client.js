@@ -88,6 +88,7 @@ export const api = {
   get: (path) => send(path),
   post: (path, body, headers) => send(path, { method: 'POST', body, headers }),
   patch: (path, body) => send(path, { method: 'PATCH', body }),
+  put: (path, body) => send(path, { method: 'PUT', body }),
   del: (path) => send(path, { method: 'DELETE' }),
 }
 

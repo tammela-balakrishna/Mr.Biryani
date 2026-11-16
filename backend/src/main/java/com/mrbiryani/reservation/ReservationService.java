@@ -2,6 +2,8 @@ package com.mrbiryani.reservation;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -69,6 +71,13 @@ public class ReservationService {
                 .param("id", id).param("branch", branchId).param("name", guestName.trim())
                 .param("size", partySize).param("status", Status.CHECKED_IN.name()).param("notes", notes).update();
         return get(id);
+    }
+
+    /** Reservations on one calendar day in the branch's own timezone. */
+    public List<Reservation> forBranchDay(UUID branchId, LocalDate date) {
+        ZoneId zone = branches.zoneOf(branchId);
+        Instant from = date.atStartOfDay(zone).toInstant();
+        return forBranch(branchId, from, date.plusDays(1).atStartOfDay(zone).toInstant());
     }
 
     public Reservation get(UUID id) {

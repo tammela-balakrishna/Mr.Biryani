@@ -7,6 +7,7 @@ import {
   Phone,
 } from 'lucide-react'
 import { MotionStyles, Reveal } from '../components/Motion'
+import { api } from '../api/client'
 
 /* ---------- CUSTOM ICONS (Fallback for missing Lucide exports) ---------- */
 const FacebookIcon = ({ className }) => (
@@ -46,10 +47,18 @@ export default function Contact() {
     if (submitted) setSubmitted(false)
   }
 
-  const handleSubmit = (event) => {
+  const [sendError, setSendError] = useState('')
+
+  const handleSubmit = async (event) => {
     event.preventDefault()
-    setSubmitted(true)
-    setForm(initialForm)
+    setSendError('')
+    try {
+      await api.post('/api/v1/enquiries', { name: form.name, email: form.email, message: form.message })
+      setSubmitted(true)
+      setForm(initialForm)
+    } catch (err) {
+      setSendError(err?.message || 'Your message could not be sent. Please try again or call the restaurant.')
+    }
   }
 
   const inputClass =
@@ -152,13 +161,19 @@ export default function Contact() {
 
           {/* RIGHT: Contact Form */}
           <Reveal delay={300} className="flex-1 flex flex-col justify-center">
+            {sendError && (
+              <div role="alert" className="mb-5 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                {sendError}
+              </div>
+            )}
+
             {submitted && (
               <div role="status" className="mb-6 flex items-start gap-3 rounded-lg border border-green-500/50 bg-[#110502]/90 backdrop-blur-md p-4 shadow-lg">
                 <CheckCircle2 size={20} className="shrink-0 text-green-400 mt-0.5" />
                 <div>
-                  <p className="text-sm font-bold text-green-400">Message Sent Successfully</p>
+                  <p className="text-sm font-bold text-green-400">Message received</p>
                   <p className="mt-1 text-xs leading-5 text-neutral-300">
-                    This is a frontend demo. Your message has not been delivered to the restaurant.
+                    Thank you. The restaurant has received your message and will reply by email.
                   </p>
                 </div>
               </div>

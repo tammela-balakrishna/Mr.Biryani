@@ -6,7 +6,7 @@ import Button from './Button'
 import { useAuth } from '../auth/AuthContext'
 import { getCart } from '../utils/cart'
 
-const navLinks = [['Home', '/'], ['Menu', '/menu'], ['About', '/about'], ['Gallery', '/gallery'], ['Contact', '/contact'], ['Reserve a Table', '/reservations']]
+const navLinks = [['Home', '/'], ['Menu', '/menu'], ['About', '/about'], ['Gallery', '/gallery'], ['Contact', '/contact'], ['Reviews', '/reviews'], ['Reserve a Table', '/reservations']]
 
 function Navbar() {
   const [open, setOpen] = useState(false)
@@ -39,6 +39,7 @@ function Navbar() {
 
   const accountLinks = (
     <>
+      {isStaff && <Link to="/staff" className="text-sm font-semibold text-[#D4A63A]">Staff</Link>}
       {hasPermission('roles.manage') && <Link to="/admin" className="text-sm font-semibold text-[#D4A63A]">Admin</Link>}
       {isAuthed ? (
         <>

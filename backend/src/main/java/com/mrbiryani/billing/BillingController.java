@@ -87,6 +87,17 @@ public class BillingController {
         return Map.of("data", billing.decideRefund(branchId, refundId, body.approve(), branchAccess.currentUserId()));
     }
 
+    @GetMapping("/bills")
+    @PreAuthorize("hasAuthority('PERM_billing.read')")
+    Map<String, Object> bills(@PathVariable UUID branchId, @RequestParam(required = false) String status) {
+        branchAccess.require(branchId);
+        String s = status == null ? null : status.trim().toUpperCase();
+        if (s != null && !java.util.List.of("OPEN", "PAID").contains(s)) {
+            throw com.mrbiryani.common.ApiException.badRequest("Status must be OPEN or PAID");
+        }
+        return Map.of("data", billing.listBills(branchId, s));
+    }
+
     @GetMapping("/bills/{billId}/receipt")
     @PreAuthorize("hasAuthority('PERM_billing.read')")
     Map<String, Object> receipt(@PathVariable UUID branchId, @PathVariable UUID billId) {

@@ -88,7 +88,14 @@ public class OrderService {
         BigDecimal total = subtotal.add(tax);
 
         UUID id = UUID.randomUUID();
-        orders.insertOrder(id, branchId, customerId, subtotal, tax, total, idempotencyKey, fingerprint);
+        if (orders.insertOrder(id, branchId, customerId, subtotal, tax, total, idempotencyKey, fingerprint) == 0) {
+            // A concurrent request with the same key won the race: return its order, or refuse a different one.
+            var winner = orders.findByIdempotencyKey(customerId, idempotencyKey).orElseThrow();
+            if (!winner.fingerprint().equals(fingerprint)) {
+                throw ApiException.conflict("Idempotency-Key was already used for a different order");
+            }
+            return new PlaceResult(view(winner), false);
+        }
         for (ItemRow row : rows) orders.insertItem(id, row.menuItemId(), row);
         orders.insertHistory(id, null, OrderStatus.PLACED, customerId);
         events.publishEvent(new OrderStatusChanged(branchId, id, OrderStatus.PLACED.name(), Instant.now()));

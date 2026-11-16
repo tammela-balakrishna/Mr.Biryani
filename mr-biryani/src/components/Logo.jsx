@@ -1,5 +1,3 @@
-import React from 'react'
-
 /* Save as src/components/Logo.jsx
    The Mr. Biriyani badge and brand name, drawn as inline SVG.
    Remapped to the flat Red and White palette based on the new brand image.

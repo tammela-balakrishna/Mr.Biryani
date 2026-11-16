@@ -1,478 +1,104 @@
+import { useEffect, useState } from 'react'
+import { Star } from 'lucide-react'
+import { api, ApiError } from '../api/client'
+import { feedbackApi } from '../api/staff'
 
-import { useState } from 'react'
-import {
-  Star,
-  Quote,
-  MessageSquare,
-  Send,
-  UserRound,
-  ThumbsUp,
-  Utensils,
-} from 'lucide-react'
+// Customers share a review. It is stored and shown on the site only after the restaurant approves it.
+// No reviews are displayed here until they are approved, so nothing on this page is invented content.
+const CATEGORIES = ['Food Quality', 'Service', 'Ambience', 'Value']
 
-const initialReviews = [
-  {
-    id: 1,
-    name: 'Rahul K.',
-    date: 'Customer review',
-    rating: 5,
-    category: 'Food Quality',
-    comment:
-      'The biryani was full of flavour. The rice was aromatic and the spices were perfectly balanced.',
-    initials: 'RK',
-  },
-  {
-    id: 2,
-    name: 'Priya S.',
-    date: 'Customer review',
-    rating: 5,
-    category: 'Taste',
-    comment:
-      'Loved the authentic Andhra-style flavours. The food was delicious and satisfying.',
-    initials: 'PS',
-  },
-  {
-    id: 3,
-    name: 'Arjun M.',
-    date: 'Customer review',
-    rating: 4,
-    category: 'Portion',
-    comment:
-      'Good biryani with generous portions. A nice option when craving spicy food.',
-    initials: 'AM',
-  },
-]
+const initialForm = { name: '', category: CATEGORIES[0], comment: '' }
 
-const categories = [
-  'All',
-  'Food Quality',
-  'Taste',
-  'Portion',
-  'Service',
-]
-
-function Stars({ rating, size = 17 }) {
-  return (
-    <div className="flex items-center gap-1" aria-label={`${rating} out of 5 stars`}>
-      {[1, 2, 3, 4, 5].map((star) => (
-        <Star
-          key={star}
-          size={size}
-          fill={star <= rating ? '#FFC107' : 'transparent'}
-          className={
-            star <= rating
-              ? 'text-[#FFC107]'
-              : 'text-neutral-600'
-          }
-        />
-      ))}
-    </div>
-  )
-}
-
-function Reviews() {
-  const [reviews, setReviews] = useState(initialReviews)
-  const [activeCategory, setActiveCategory] = useState('All')
+export default function Reviews() {
+  const [form, setForm] = useState(initialForm)
   const [rating, setRating] = useState(5)
-  const [form, setForm] = useState({
-    name: '',
-    category: 'Food Quality',
-    comment: '',
-  })
-  const [submitted, setSubmitted] = useState(false)
+  const [sent, setSent] = useState(false)
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [published, setPublished] = useState([])
 
-  const filteredReviews =
-    activeCategory === 'All'
-      ? reviews
-      : reviews.filter(
-          (review) => review.category === activeCategory,
-        )
+  useEffect(() => {
+    // Only approved reviews are shown here.
+    feedbackApi.publishedReviews().then(setPublished).catch(() => setPublished([]))
+  }, [])
 
-  const averageRating =
-    reviews.length > 0
-      ? (
-          reviews.reduce((sum, review) => sum + review.rating, 0) /
-          reviews.length
-        ).toFixed(1)
-      : '0.0'
+  const change = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
-  const handleChange = (event) => {
-    setForm({
-      ...form,
-      [event.target.name]: event.target.value,
-    })
-    setSubmitted(false)
-  }
-
-  const handleSubmit = (event) => {
-    event.preventDefault()
-
-    const newReview = {
-      id: Date.now(),
-      name: form.name.trim(),
-      date: 'Just now',
-      rating,
-      category: form.category,
-      comment: form.comment.trim(),
-      initials: form.name
-        .trim()
-        .split(' ')
-        .map((part) => part[0])
-        .join('')
-        .slice(0, 2)
-        .toUpperCase(),
+  const submit = async (e) => {
+    e.preventDefault()
+    setError('')
+    setBusy(true)
+    try {
+      await api.post('/api/v1/reviews', {
+        name: form.name.trim(),
+        rating,
+        category: form.category,
+        comment: form.comment.trim(),
+      })
+      setForm(initialForm)
+      setRating(5)
+      setSent(true)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Your review could not be sent. Please try again.')
+    } finally {
+      setBusy(false)
     }
-
-    setReviews((previous) => [newReview, ...previous])
-    setActiveCategory('All')
-    setForm({
-      name: '',
-      category: 'Food Quality',
-      comment: '',
-    })
-    setRating(5)
-    setSubmitted(true)
   }
+
+  const field = 'w-full rounded-xl border border-white/10 bg-[#080808] px-4 py-3 text-white outline-none focus:border-[#D4A63A]'
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#0b0705] text-white">
+    <main className="min-h-screen bg-[#080808] px-4 py-16 text-white sm:px-6">
+      <div className="mx-auto max-w-2xl">
+        <p className="text-xs font-bold uppercase tracking-[3px] text-[#D4A63A]">Your feedback</p>
+        <h1 className="mt-3 font-serif text-4xl font-bold">Share your <span className="text-[#D4A63A]">experience</span></h1>
 
-      {/* HERO */}
-      <section className="relative isolate overflow-hidden border-b border-[#FFC107]/20">
-        <div
-          className="absolute inset-0 -z-20 bg-cover bg-center"
-          style={{
-            backgroundImage:
-              "url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1920&q=85')",
-          }}
-        />
-
-        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/95 via-[#190a05]/90 to-black/75" />
-
-        <div className="mx-auto max-w-7xl px-5 py-20 text-center sm:px-8 md:py-28">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#FFC107]/30 bg-[#FFC107]/10 px-4 py-2 text-xs font-bold uppercase tracking-[3px] text-[#FFC107]">
-            <MessageSquare size={15} />
-            Customer Experiences
-          </div>
-
-          <h1 className="text-4xl font-black sm:text-5xl md:text-6xl">
-            What People
-            <span className="block text-[#FFC107]">
-              Say About Us
-            </span>
-          </h1>
-
-          <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-neutral-300 sm:text-base">
-            Every plate tells a story. Discover customer feedback
-            and share your experience with Mr. BIRIYANI.
+        {sent ? (
+          <p role="status" className="mt-8 rounded-lg border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-300">
+            Thank you! Your review has been sent and will appear once the restaurant approves it.
           </p>
+        ) : null}
+        {error ? <p role="alert" className="mt-8 rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">{error}</p> : null}
 
-          <a
-            href="#customer-reviews"
-            className="mt-8 inline-flex items-center gap-2 rounded-lg bg-[#FFC107] px-7 py-3.5 font-bold text-black transition hover:-translate-y-1 hover:bg-yellow-300"
-          >
-            Explore Reviews
-            <Star size={18} fill="currentColor" />
-          </a>
-        </div>
-      </section>
-
-      {/* RATING OVERVIEW */}
-      <section className="mx-auto max-w-7xl px-5 py-14 sm:px-8">
-        <div className="grid gap-5 sm:grid-cols-3">
-
-          <div className="rounded-2xl border border-[#FFC107]/20 bg-[#17100c] p-7 text-center">
-            <Star
-              size={28}
-              fill="#FFC107"
-              className="mx-auto text-[#FFC107]"
-            />
-            <p className="mt-3 text-4xl font-extrabold text-[#FFC107]">
-              {averageRating}
-            </p>
-            <div className="mt-3 flex justify-center">
-              <Stars rating={Math.round(Number(averageRating))} />
-            </div>
-            <p className="mt-3 text-sm text-neutral-400">
-              Average rating of displayed reviews
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-[#17100c] p-7 text-center">
-            <MessageSquare
-              size={28}
-              className="mx-auto text-[#FFC107]"
-            />
-            <p className="mt-3 text-4xl font-extrabold text-white">
-              {reviews.length}
-            </p>
-            <p className="mt-3 text-sm text-neutral-400">
-              Reviews displayed
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-[#17100c] p-7 text-center">
-            <Utensils
-              size={28}
-              className="mx-auto text-[#FFC107]"
-            />
-            <p className="mt-3 text-2xl font-extrabold text-white">
-              Andhra
-            </p>
-            <p className="mt-3 text-sm text-neutral-400">
-              House of Authentic Flavours
-            </p>
-          </div>
-
-        </div>
-      </section>
-
-      {/* CUSTOMER REVIEWS */}
-      <section
-        id="customer-reviews"
-        className="mx-auto max-w-7xl px-5 pb-16 sm:px-8"
-      >
-        <div className="mb-9 text-center">
-          <p className="mb-3 text-xs font-bold uppercase tracking-[4px] text-[#FFC107]">
-            Real Experiences Matter
-          </p>
-          <h2 className="text-3xl font-extrabold sm:text-4xl">
-            Customer <span className="text-[#FFC107]">Reviews</span>
-          </h2>
-          <p className="mt-4 text-sm text-neutral-400">
-            Explore feedback about food, taste and dining experiences.
-          </p>
-        </div>
-
-        {/* FILTERS */}
-        <div className="mb-9 flex flex-wrap justify-center gap-3">
-          {categories.map((category) => (
-            <button
-              key={category}
-              type="button"
-              onClick={() => setActiveCategory(category)}
-              className={`rounded-full border px-5 py-2.5 text-sm font-semibold transition ${
-                activeCategory === category
-                  ? 'border-[#FFC107] bg-[#FFC107] text-black'
-                  : 'border-white/15 bg-white/5 text-neutral-300 hover:border-[#FFC107] hover:text-[#FFC107]'
-              }`}
-            >
-              {category}
-            </button>
-          ))}
-        </div>
-
-        {/* REVIEW CARDS */}
-        {filteredReviews.length > 0 ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredReviews.map((review) => (
-              <article
-                key={review.id}
-                className="group relative rounded-2xl border border-white/10 bg-[#17100c] p-6 transition duration-300 hover:-translate-y-1 hover:border-[#FFC107]/50 hover:shadow-xl hover:shadow-black/30"
-              >
-                <Quote
-                  size={35}
-                  className="absolute right-6 top-6 text-[#FFC107]/20"
-                />
-
-                <Stars rating={review.rating} />
-
-                <span className="mt-5 inline-block rounded-full border border-[#FFC107]/20 bg-[#FFC107]/10 px-3 py-1 text-xs font-semibold text-[#FFC107]">
-                  {review.category}
-                </span>
-
-                <p className="mt-5 min-h-[100px] text-sm leading-7 text-neutral-300">
-                  "{review.comment}"
-                </p>
-
-                <div className="mt-6 flex items-center gap-3 border-t border-white/10 pt-5">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full border border-[#FFC107]/30 bg-[#FFC107]/10 font-bold text-[#FFC107]">
-                    {review.initials}
-                  </div>
-
-                  <div>
-                    <h3 className="text-sm font-bold text-white">
-                      {review.name}
-                    </h3>
-                    <p className="mt-1 text-xs text-neutral-500">
-                      {review.date}
-                    </p>
-                  </div>
-
-                  <ThumbsUp
-                    size={17}
-                    className="ml-auto text-[#FFC107]/60"
-                  />
-                </div>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-2xl border border-white/10 bg-[#17100c] py-16 text-center">
-            <MessageSquare
-              size={38}
-              className="mx-auto text-[#FFC107]/50"
-            />
-            <p className="mt-4 font-semibold">
-              No reviews in this category yet.
-            </p>
-            <p className="mt-2 text-sm text-neutral-500">
-              Be the first to share your experience.
-            </p>
-          </div>
-        )}
-      </section>
-
-      {/* WRITE A REVIEW */}
-      <section className="mx-auto max-w-7xl px-5 pb-20 sm:px-8">
-        <div className="grid gap-10 overflow-hidden rounded-2xl border border-[#FFC107]/20 bg-gradient-to-br from-[#201108] to-[#100a07] p-6 sm:p-10 lg:grid-cols-2 lg:p-12">
-
-          <div className="flex flex-col justify-center">
-            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-[#FFC107]/10">
-              <MessageSquare
-                size={27}
-                className="text-[#FFC107]"
-              />
-            </div>
-
-            <p className="text-xs font-bold uppercase tracking-[3px] text-[#FFC107]">
-              Your Opinion Matters
-            </p>
-
-            <h2 className="mt-4 text-3xl font-extrabold leading-tight sm:text-4xl">
-              Share Your
-              <span className="block text-[#FFC107]">
-                Experience With Us
-              </span>
-            </h2>
-
-            <p className="mt-5 max-w-md text-sm leading-7 text-neutral-400">
-              Tried our biryani? Tell us what you loved and help
-              other food lovers discover their next favourite meal.
-            </p>
-
-            <div className="mt-8 flex items-center gap-3 text-sm text-neutral-300">
-              <Star
-                size={19}
-                fill="#FFC107"
-                className="text-[#FFC107]"
-              />
-              Your feedback helps us improve.
-            </div>
-          </div>
-
-          <form
-            onSubmit={handleSubmit}
-            className="rounded-xl border border-white/10 bg-black/30 p-5 sm:p-7"
-          >
-            <h3 className="mb-6 text-xl font-bold">
-              Write a Review
-            </h3>
-
-            <label className="mb-2 block text-sm font-medium text-neutral-300">
-              Your Name
-            </label>
-
-            <div className="mb-5 flex items-center rounded-lg border border-white/15 bg-[#0d0a08] px-4 focus-within:border-[#FFC107]">
-              <UserRound size={18} className="text-[#FFC107]" />
-              <input
-                required
-                name="name"
-                value={form.name}
-                onChange={handleChange}
-                maxLength={50}
-                placeholder="Enter your name"
-                className="w-full bg-transparent px-3 py-3.5 text-sm text-white outline-none placeholder:text-neutral-600"
-              />
-            </div>
-
-            <label className="mb-3 block text-sm font-medium text-neutral-300">
-              Your Rating
-            </label>
-
-            <div className="mb-6 flex items-center gap-2">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  type="button"
-                  onClick={() => setRating(star)}
-                  aria-label={`Rate ${star} stars`}
-                  className="transition hover:scale-110"
-                >
-                  <Star
-                    size={30}
-                    fill={star <= rating ? '#FFC107' : 'transparent'}
-                    className={
-                      star <= rating
-                        ? 'text-[#FFC107]'
-                        : 'text-neutral-600'
-                    }
-                  />
+        <form onSubmit={submit} className="mt-8 space-y-5 rounded-2xl border border-[#D4A63A]/20 bg-[#111010] p-6">
+          <label className="block text-sm text-neutral-300">Your name
+            <input required name="name" maxLength={120} value={form.name} onChange={change} className={`${field} mt-2`} />
+          </label>
+          <fieldset>
+            <legend className="mb-2 text-sm text-neutral-300">Rating</legend>
+            <div className="flex gap-1" role="radiogroup" aria-label="Rating">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button key={n} type="button" role="radio" aria-checked={rating === n} aria-label={`${n} star${n > 1 ? 's' : ''}`}
+                  onClick={() => setRating(n)} className="p-1">
+                  <Star size={26} className={n <= rating ? 'fill-[#D4A63A] text-[#D4A63A]' : 'text-neutral-600'} />
                 </button>
               ))}
-              <span className="ml-2 text-sm text-[#FFC107]">
-                {rating}/5
-              </span>
             </div>
-
-            <label className="mb-2 block text-sm font-medium text-neutral-300">
-              Review Category
-            </label>
-
-            <select
-              name="category"
-              value={form.category}
-              onChange={handleChange}
-              className="mb-5 w-full rounded-lg border border-white/15 bg-[#0d0a08] px-4 py-3.5 text-sm text-white outline-none focus:border-[#FFC107]"
-            >
-              {categories
-                .filter((category) => category !== 'All')
-                .map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
+          </fieldset>
+          <label className="block text-sm text-neutral-300">Category
+            <select name="category" value={form.category} onChange={change} className={`${field} mt-2`}>
+              {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
             </select>
+          </label>
+          <label className="block text-sm text-neutral-300">Your review
+            <textarea required name="comment" rows={4} maxLength={1000} value={form.comment} onChange={change} className={`${field} mt-2`} />
+          </label>
+          <button type="submit" disabled={busy} className="w-full rounded-xl bg-[#D4A63A] px-5 py-4 font-bold text-black hover:bg-[#E8BD57] disabled:opacity-50">
+            {busy ? 'Sending…' : 'Send review'}
+          </button>
+        </form>
 
-            <label className="mb-2 block text-sm font-medium text-neutral-300">
-              Your Experience
-            </label>
-
-            <textarea
-              required
-              name="comment"
-              value={form.comment}
-              onChange={handleChange}
-              rows={4}
-              maxLength={500}
-              placeholder="Tell us about your experience..."
-              className="mb-5 w-full resize-none rounded-lg border border-white/15 bg-[#0d0a08] px-4 py-3.5 text-sm text-white outline-none placeholder:text-neutral-600 focus:border-[#FFC107]"
-            />
-
-            {submitted && (
-              <div className="mb-5 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-400">
-                Thank you! Your review has been added to this page.
-              </div>
-            )}
-
-            <button
-              type="submit"
-              className="flex w-full items-center justify-center gap-3 rounded-lg bg-[#FFC107] px-6 py-4 font-extrabold text-black transition hover:-translate-y-1 hover:bg-yellow-300"
-            >
-              Submit Review
-              <Send size={18} />
-            </button>
-
-            <p className="mt-4 text-center text-xs leading-5 text-neutral-500">
-              Demo only: reviews are stored in page state and are not
-              permanently saved or verified.
-            </p>
-          </form>
-        </div>
-      </section>
-
+        <section className="mt-12 space-y-4">
+          <h2 className="font-serif text-2xl font-bold">What our guests say</h2>
+          {published.length === 0 ? <p className="text-neutral-400">Reviews appear here once approved.</p> : null}
+          {published.map((r) => (
+            <article key={r.id} className="rounded-xl border border-[#D4A63A]/20 bg-[#111010] p-4">
+              <p className="font-bold">{r.name} · {r.rating}★ · {r.category}</p>
+              <p className="mt-1 text-sm text-neutral-300">{r.comment}</p>
+            </article>
+          ))}
+        </section>
+      </div>
     </main>
   )
 }
-
-export default Reviews

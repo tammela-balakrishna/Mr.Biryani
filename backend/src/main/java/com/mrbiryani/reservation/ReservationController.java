@@ -95,8 +95,7 @@ public class ReservationController {
     @PreAuthorize("hasAuthority('PERM_reservations.read')")
     List<Reservation> forBranch(@PathVariable UUID branchId, @RequestParam LocalDate date) {
         branchAccess.require(branchId);
-        Instant from = date.atStartOfDay().toInstant(ZoneOffset.UTC);
-        return reservations.forBranch(branchId, from, from.plusSeconds(86_400));
+        return reservations.forBranchDay(branchId, date);
     }
 
     @PostMapping("/reservations/{id}/cancel")
