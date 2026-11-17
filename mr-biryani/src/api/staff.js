@@ -15,6 +15,9 @@ export const floorApi = {
   assignWaiter: (branchId, tableId, waiterUserId) => api.post(`${b(branchId)}/tables/${tableId}/assignment`, { waiterUserId }),
   staff: (branchId) => api.get(`${b(branchId)}/staff`),
   waiters: (branchId) => api.get(`${b(branchId)}/tables/waiters`),
+  createTable: (branchId, input) => api.post(`${b(branchId)}/tables`, input),
+  updateTable: (branchId, tableId, input) => api.patch(`${b(branchId)}/tables/${tableId}`, input),
+  deleteTable: (branchId, tableId) => api.del(`${b(branchId)}/tables/${tableId}`),
 }
 
 export const ordersApi = {
@@ -49,6 +52,17 @@ export const managerApi = {
   createStaff: (branchId, input) => api.post(`${b(branchId)}/staff`, input),
   disableStaff: (branchId, userId) => api.del(`${b(branchId)}/staff/${userId}`),
   sales: (branchId, from, to) => api.get(`${b(branchId)}/reports/sales?from=${from}&to=${to}`),
+  updateItem: (branchId, itemId, input) => api.patch(`${b(branchId)}/inventory/${itemId}`, input),
+  archiveItem: (branchId, itemId) => api.del(`${b(branchId)}/inventory/${itemId}`),
+  updateExpense: (branchId, id, input) => api.patch(`${b(branchId)}/expenses/${id}`, input),
+  deleteExpense: (branchId, id) => api.del(`${b(branchId)}/expenses/${id}`),
+  changeStaffRole: (branchId, userId, role) => api.patch(`${b(branchId)}/staff/${userId}`, { role }),
+}
+
+export const menuApi = {
+  list: () => api.get('/api/v1/menu'),
+  updateDetails: (itemId, input) => api.patch(`/api/v1/menu/items/${itemId}`, input),
+  setAvailability: (itemId, available) => api.patch(`/api/v1/menu/items/${itemId}/availability`, { available }),
 }
 
 export const adminApi = {

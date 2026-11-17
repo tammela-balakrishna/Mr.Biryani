@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -95,6 +96,35 @@ public class FloorController {
                 .param("s", status).param("id", tableId).param("b", branchId).update();
         if (rows == 0) throw ApiException.notFound("Table not found");
         return Map.of("data", Map.of("id", tableId, "status", status));
+    }
+
+    /** Changes a table's label or seat count. */
+    @PatchMapping("/{tableId}")
+    @PreAuthorize("hasAuthority('PERM_tables.allocate')")
+    Map<String, Object> updateTable(@PathVariable UUID branchId, @PathVariable UUID tableId, @Valid @RequestBody TableRequest body) {
+        branchAccess.require(branchId);
+        try {
+            int rows = jdbc.sql("UPDATE dining_tables SET label = :l, capacity = :c, version = version + 1 "
+                    + "WHERE id = :id AND branch_id = :b")
+                    .param("l", body.label().trim()).param("c", body.capacity()).param("id", tableId).param("b", branchId).update();
+            if (rows == 0) throw ApiException.notFound("Table not found");
+        } catch (org.springframework.dao.DuplicateKeyException e) {
+            throw ApiException.conflict("A table with this label already exists");
+        }
+        return Map.of("data", Map.of("id", tableId));
+    }
+
+    /** Removes a table. Only an available table can be removed, so no guest is seated at it. */
+    @DeleteMapping("/{tableId}")
+    @PreAuthorize("hasAuthority('PERM_tables.allocate')")
+    ResponseEntity<Void> deleteTable(@PathVariable UUID branchId, @PathVariable UUID tableId) {
+        branchAccess.require(branchId);
+        String status = jdbc.sql("SELECT status FROM dining_tables WHERE id = :id AND branch_id = :b")
+                .param("id", tableId).param("b", branchId).query(String.class).optional()
+                .orElseThrow(() -> ApiException.notFound("Table not found"));
+        if (!"AVAILABLE".equals(status)) throw ApiException.conflict("Only an available table can be removed");
+        jdbc.sql("DELETE FROM dining_tables WHERE id = :id").param("id", tableId).update();
+        return ResponseEntity.noContent().build();
     }
 
     /** Makes a waiter responsible for a table. The waiter must hold WAITER in this branch. */

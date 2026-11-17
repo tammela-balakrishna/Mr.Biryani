@@ -10,6 +10,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -81,6 +82,19 @@ public class AdministrationController {
         branchAccess.require(branchId);
         service.disableStaff(branchAccess.currentUserId(), branchAccess.hasPermission("users.manage"),
                 branchId, userId, requestId(req));
+        return ResponseEntity.noContent().build();
+    }
+
+    public record ChangeRoleRequest(@NotBlank @Size(max = 20) String role) {}
+
+    /** Changes a staff member's role in this branch (for example Waiter to Captain). */
+    @PatchMapping("/branches/{branchId}/staff/{userId}")
+    @PreAuthorize("hasAuthority('PERM_staff.update')")
+    ResponseEntity<Void> changeRole(@PathVariable UUID branchId, @PathVariable UUID userId,
+            @Valid @RequestBody ChangeRoleRequest body, HttpServletRequest req) {
+        branchAccess.require(branchId);
+        service.changeStaffRole(branchAccess.currentUserId(), branchAccess.hasPermission("users.manage"),
+                branchId, userId, body.role(), requestId(req));
         return ResponseEntity.noContent().build();
     }
 

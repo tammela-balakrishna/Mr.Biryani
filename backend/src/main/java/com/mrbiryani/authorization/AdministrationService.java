@@ -130,6 +130,24 @@ public class AdministrationService {
         audit(actorId, branchId, "staff.disabled", targetId.toString(), requestId, Map.of("roles", roles));
     }
 
+    /** Moves a staff member in this branch to a different staff role. Only Admin can promote to or change a Manager. */
+    @Transactional
+    public void changeStaffRole(UUID actorId, boolean actorManagesUsers, UUID branchId, UUID targetId, String roleCode, String requestId) {
+        if (actorId.equals(targetId)) throw ApiException.conflict("You cannot change your own role");
+        Role role = parseRole(roleCode);
+        if (role == Role.CUSTOMER) throw ApiException.badRequest("Customers self-register; staff roles only");
+        if (role == Role.ADMIN) throw ApiException.forbidden("Admin accounts are not assigned from here");
+        if (role == Role.MANAGER && !actorManagesUsers) throw ApiException.forbidden("Only Admin can promote someone to Manager");
+        List<String> roles = repo.activeRolesInBranch(targetId, branchId);
+        if (roles.isEmpty()) throw ApiException.notFound("Staff member not found in this branch");
+        if (roles.contains(Role.ADMIN.name())) throw ApiException.forbidden("Admin accounts cannot be changed here");
+        if (roles.contains(Role.MANAGER.name()) && !actorManagesUsers) throw ApiException.forbidden("Only Admin can change a Manager's role");
+        if (roles.contains(role.name())) return;
+        repo.deactivateBranchAssignments(targetId, branchId, actorId);
+        repo.assignRole(targetId, role.name(), branchId, actorId);
+        audit(actorId, branchId, "staff.role_changed", targetId.toString(), requestId, Map.of("from", roles, "to", role.name()));
+    }
+
     private static Role parseRole(String code) {
         try {
             return Role.valueOf(code.trim().toUpperCase());

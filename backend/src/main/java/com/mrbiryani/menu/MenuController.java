@@ -69,6 +69,16 @@ public class MenuController {
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("data", Map.of("id", id)));
     }
 
+    public record DetailsRequest(@NotBlank @Size(max = 120) String name, @Size(max = 500) String description) {}
+
+    /** Edits a dish's name and description. Price has its own permission. */
+    @PatchMapping("/items/{id}")
+    @PreAuthorize("hasAuthority('PERM_menu.update')")
+    ResponseEntity<Void> updateDetails(@PathVariable UUID id, @Valid @RequestBody DetailsRequest body) {
+        menu.updateDetails(id, body.name(), body.description());
+        return ResponseEntity.noContent().build();
+    }
+
     @PatchMapping("/items/{id}/price")
     @PreAuthorize("hasAuthority('PERM_menu.price.update')")
     ResponseEntity<Void> updatePrice(@PathVariable UUID id, @Valid @RequestBody PriceRequest body) {

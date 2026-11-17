@@ -59,6 +59,13 @@ public class MenuService {
     }
 
     @Transactional
+    public void updateDetails(UUID itemId, String name, String description) {
+        if (repo.updateDetails(itemId, name.trim(), description == null ? null : description.trim()) == 0) {
+            throw ApiException.notFound("Menu item not found");
+        }
+    }
+
+    @Transactional
     public void updateAvailability(UUID itemId, boolean available) {
         if (repo.updateAvailability(itemId, available) == 0) throw ApiException.notFound("Menu item not found");
     }

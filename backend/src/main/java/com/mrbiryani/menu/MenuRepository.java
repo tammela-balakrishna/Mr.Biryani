@@ -71,6 +71,11 @@ public class MenuRepository {
                 .param("price", price).param("id", itemId).update();
     }
 
+    public int updateDetails(UUID itemId, String name, String description) {
+        return jdbc.sql("UPDATE menu_items SET name = :n, description = :d, updated_at = now() WHERE id = :id")
+                .param("n", name).param("d", description).param("id", itemId).update();
+    }
+
     public int updateAvailability(UUID itemId, boolean available) {
         return jdbc.sql("UPDATE menu_items SET is_available = :avail, updated_at = now() WHERE id = :id")
                 .param("avail", available).param("id", itemId).update();

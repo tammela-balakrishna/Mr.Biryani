@@ -10,7 +10,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -56,7 +58,7 @@ public class InventoryController {
     Map<String, Object> items(@PathVariable UUID branchId) {
         branchAccess.require(branchId);
         List<ItemView> items = jdbc.sql("SELECT id, name, unit, quantity, reorder_level FROM inventory_items "
-                + "WHERE branch_id = :b ORDER BY name")
+                + "WHERE branch_id = :b AND NOT archived ORDER BY name")
                 .param("b", branchId)
                 .query((rs, i) -> {
                     BigDecimal qty = rs.getBigDecimal("quantity");
@@ -81,6 +83,34 @@ public class InventoryController {
             throw ApiException.conflict("An item with this name already exists in the branch");
         }
         return Map.of("data", Map.of("id", id));
+    }
+
+    /** Edits an item's name, unit or reorder level. Stock quantity changes only through movements. */
+    @PatchMapping("/inventory/{itemId}")
+    @PreAuthorize("hasAuthority('PERM_inventory.update')")
+    Map<String, Object> updateItem(@PathVariable UUID branchId, @PathVariable UUID itemId, @Valid @RequestBody ItemRequest body) {
+        branchAccess.require(branchId);
+        try {
+            int rows = jdbc.sql("UPDATE inventory_items SET name = :n, unit = :u, reorder_level = :r "
+                    + "WHERE id = :id AND branch_id = :b AND NOT archived")
+                    .param("n", body.name().trim()).param("u", body.unit().trim()).param("r", body.reorderLevel())
+                    .param("id", itemId).param("b", branchId).update();
+            if (rows == 0) throw ApiException.notFound("Inventory item not found");
+        } catch (org.springframework.dao.DuplicateKeyException e) {
+            throw ApiException.conflict("An item with this name already exists in the branch");
+        }
+        return Map.of("data", Map.of("id", itemId));
+    }
+
+    /** Archives an item: it leaves the stock list but its movement history is kept. */
+    @DeleteMapping("/inventory/{itemId}")
+    @PreAuthorize("hasAuthority('PERM_inventory.update')")
+    ResponseEntity<Void> archiveItem(@PathVariable UUID branchId, @PathVariable UUID itemId) {
+        branchAccess.require(branchId);
+        int rows = jdbc.sql("UPDATE inventory_items SET archived = TRUE WHERE id = :id AND branch_id = :b AND NOT archived")
+                .param("id", itemId).param("b", branchId).update();
+        if (rows == 0) throw ApiException.notFound("Inventory item not found");
+        return ResponseEntity.noContent().build();
     }
 
     /** Stock adjustment. Negative stock is refused here and by a database check. */
@@ -124,6 +154,36 @@ public class InventoryController {
         branchAccess.require(branchId);
         return Map.of("data", jdbc.sql("SELECT id, category, amount, description, status, created_by, approved_by, created_at "
                 + "FROM expenses WHERE branch_id = :b ORDER BY created_at DESC LIMIT 200").param("b", branchId).query().listOfRows());
+    }
+
+    /** Only a pending expense can be edited, and only by the person who recorded it. */
+    @PatchMapping("/expenses/{expenseId}")
+    @PreAuthorize("hasAuthority('PERM_expenses.create')")
+    Map<String, Object> updateExpense(@PathVariable UUID branchId, @PathVariable UUID expenseId, @Valid @RequestBody ExpenseRequest body) {
+        branchAccess.require(branchId);
+        requireEditableExpense(branchId, expenseId);
+        jdbc.sql("UPDATE expenses SET category = :c, amount = :a, description = :d WHERE id = :id")
+                .param("c", body.category().trim()).param("a", body.amount()).param("d", body.description().trim())
+                .param("id", expenseId).update();
+        return Map.of("data", Map.of("id", expenseId));
+    }
+
+    @DeleteMapping("/expenses/{expenseId}")
+    @PreAuthorize("hasAuthority('PERM_expenses.create')")
+    ResponseEntity<Void> deleteExpense(@PathVariable UUID branchId, @PathVariable UUID expenseId) {
+        branchAccess.require(branchId);
+        requireEditableExpense(branchId, expenseId);
+        jdbc.sql("DELETE FROM expenses WHERE id = :id").param("id", expenseId).update();
+        return ResponseEntity.noContent().build();
+    }
+
+    private void requireEditableExpense(UUID branchId, UUID expenseId) {
+        var row = jdbc.sql("SELECT status, created_by FROM expenses WHERE id = :id AND branch_id = :b")
+                .param("id", expenseId).param("b", branchId)
+                .query((rs, i) -> new Object[] {rs.getString("status"), rs.getObject("created_by", UUID.class)})
+                .optional().orElseThrow(() -> ApiException.notFound("Expense not found"));
+        if (!"PENDING".equals(row[0])) throw ApiException.conflict("Only pending expenses can be changed");
+        if (!row[1].equals(branchAccess.currentUserId())) throw ApiException.forbidden("You can only change expenses you recorded");
     }
 
     /** The person who recorded an expense cannot approve it. */
