@@ -87,3 +87,23 @@ tests/unit/               Jest tests
 `eas.json` defines `development`, `preview` and `production` builds. Run them with `npx eas-cli@latest build -p android --profile preview` after `npx eas-cli@latest login` and project setup. Signing credentials are managed by EAS and are not stored in this repository.
 
 These changes still need approval from the security review, because the spec leaves the refresh-token mechanism to be agreed.
+
+## Render backend and APK
+
+The repository root contains [`render.yaml`](../render.yaml), which provisions the Docker backend and PostgreSQL database on Render. In the Render dashboard, create a Blueprint from this repository and apply it. The backend health check is:
+
+```text
+https://<your-render-service>.onrender.com/actuator/health
+```
+
+After the response reports `UP`, configure the API URL in the EAS `preview` environment and build the installable APK:
+
+```powershell
+cd react-native
+npx eas-cli@latest login
+npx eas-cli@latest init
+npx eas-cli@latest env:create --name EXPO_PUBLIC_API_BASE_URL --value https://<your-render-service>.onrender.com --environment preview --scope project
+npx eas-cli@latest build --platform android --profile preview
+```
+
+The URL is embedded in the APK because `EXPO_PUBLIC_*` values are public build-time configuration. Keep `JWT_SECRET`, database credentials, payment credentials and model API keys only in Render environment variables. Download the APK from the EAS build page when the build completes.
