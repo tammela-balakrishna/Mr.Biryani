@@ -1,0 +1,44 @@
+services:
+  - type: web
+    name: mr-biryani-api
+    runtime: docker
+    plan: free
+    region: singapore
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: DATABASE_HOST
+        fromDatabase:
+          name: mr-biryani-db
+          property: host
+      - key: DATABASE_PORT
+        fromDatabase:
+          name: mr-biryani-db
+          property: port
+      - key: DATABASE_NAME
+        fromDatabase:
+          name: mr-biryani-db
+          property: database
+      - key: DATABASE_USERNAME
+        fromDatabase:
+          name: mr-biryani-db
+          property: user
+      - key: DATABASE_PASSWORD
+        fromDatabase:
+          name: mr-biryani-db
+          property: password
+      - key: JWT_SECRET
+        generateValue: true
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: API_DOCS_ENABLED
+        value: "false"
+
+databases:
+  - name: mr-biryani-db
+    plan: free
+    region: singapore
+    databaseName: mrbiryani
+    user: mrbiryani
