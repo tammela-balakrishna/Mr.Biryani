@@ -22,6 +22,7 @@ export const floorApi = {
 
 export const ordersApi = {
   list: (branchId, status) => api.get(`${b(branchId)}/orders${status ? `?status=${status}` : ''}`),
+create: (branchId, input) => api.post(`${b(branchId)}/orders`, input),
   setStatus: (orderId, status) => api.patch(`/api/v1/orders/${orderId}/status`, { status }),
   bills: (branchId, status) => api.get(`${b(branchId)}/bills${status ? `?status=${status}` : ''}`),
   createBill: (branchId, orderId) => api.post(`${b(branchId)}/orders/${orderId}/bill`),

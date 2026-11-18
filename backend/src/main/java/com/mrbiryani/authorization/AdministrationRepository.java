@@ -58,10 +58,15 @@ public class AdministrationRepository {
                 .param("email", email).query(Boolean.class).single();
     }
 
-    public UUID insertUser(String email, String fullName, String passwordHash) {
+    public UUID insertUser(String email, String phone, String fullName, String passwordHash) {
         UUID id = UUID.randomUUID();
-        jdbc.sql("INSERT INTO users (id, email, full_name, password_hash) VALUES (:id, :email, :name, :hash)")
-                .param("id", id).param("email", email).param("name", fullName).param("hash", passwordHash).update();
+        jdbc.sql("INSERT INTO users (id, email, phone, full_name, password_hash) VALUES (:id, :email, :phone, :name, :hash)")
+                .param("id", id)
+                .param("email", email)
+                .param("phone", phone)
+                .param("name", fullName)
+                .param("hash", passwordHash)
+                .update();
         return id;
     }
 

@@ -90,9 +90,10 @@ public class AdministrationService {
     }
 
     /** Creates a staff account and assigns one role. The caller has already checked branch access. */
+    /** Creates a staff account and assigns one role. The caller has already checked branch access. */
     @Transactional
     public StaffCreated createStaff(UUID actorId, boolean actorManagesUsers, UUID branchId, String email,
-            String fullName, String rawPassword, String roleCode, String requestId) {
+                                    String phone, String fullName, String rawPassword, String roleCode, String requestId) { // <-- phone added here
         Role role = parseRole(roleCode);
         if (role == Role.CUSTOMER) {
             throw ApiException.badRequest("Customers self-register; staff roles only");
@@ -105,7 +106,8 @@ public class AdministrationService {
 
         UUID userId;
         try {
-            userId = repo.insertUser(normalized, fullName.trim(), encoder.encode(rawPassword));
+            // Pass the phone parameter to the repository
+            userId = repo.insertUser(normalized, phone.trim(), fullName.trim(), encoder.encode(rawPassword));
         } catch (DuplicateKeyException e) {
             throw ApiException.conflict("An account with this email already exists");
         }

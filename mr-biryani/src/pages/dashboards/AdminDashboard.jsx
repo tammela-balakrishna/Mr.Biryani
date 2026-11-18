@@ -12,6 +12,10 @@ export default function AdminDashboard() {
   const [data, setData] = useState({ staff: [], tables: [], expenses: [], reviews: [], enquiries: [], sales: null })
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  
+  // New state for the Add Staff form (Phone added)
+  const [showStaffForm, setShowStaffForm] = useState(false)
+  const [staffForm, setStaffForm] = useState({ fullName: '', email: '', phone: '', password: '', role: 'WAITER' })
 
   const load = useCallback(async () => {
     if (!branchId) return
@@ -29,6 +33,7 @@ export default function AdminDashboard() {
       setError(errorText(err, 'Could not load the dashboard.'))
     }
   }, [branchId])
+  
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load()
@@ -37,6 +42,23 @@ export default function AdminDashboard() {
   const act = async (fn, ok) => {
     setError(''); setNotice('')
     try { await fn(); setNotice(ok); await load() } catch (err) { setError(errorText(err, 'That change could not be saved.')) }
+  }
+
+  // Handle staff creation directly to your backend endpoint
+const submitStaff = async (e) => {
+    e.preventDefault()
+    setError(''); setNotice('')
+    try {
+      // This single line replaces the entire fetch() block
+      await managerApi.createStaff(branchId, staffForm)
+      
+      setNotice('Staff member created successfully.')
+      setShowStaffForm(false)
+      setStaffForm({ fullName: '', email: '', phone: '', password: '', role: 'WAITER' })
+      await load() // Refresh dashboard
+    } catch (err) {
+      setError(errorText(err, 'Could not create staff.'))
+    }
   }
 
   const pendingExpenses = data.expenses.filter((e) => e.status === 'PENDING')
@@ -57,8 +79,47 @@ export default function AdminDashboard() {
 
       <div className="grid gap-8 lg:grid-cols-2">
         <Section title="Staff by role">
+          
+          {/* ADD STAFF BUTTON */}
+          {hasPermission('staff.create') && !showStaffForm && (
+            <div className="mb-4">
+              <button className={button} onClick={() => setShowStaffForm(true)}>+ Add Staff</button>
+            </div>
+          )}
+
+          {/* ADD STAFF FORM */}
+          {showStaffForm && (
+            <form onSubmit={submitStaff} className={`${card} mb-6 space-y-4`}>
+              <p className="font-bold">New Staff Member</p>
+              <input required placeholder="Full Name" className="w-full p-2 bg-transparent border border-neutral-700 rounded" 
+                value={staffForm.fullName} onChange={e => setStaffForm({...staffForm, fullName: e.target.value})} />
+              <input required type="email" placeholder="Email Address" className="w-full p-2 bg-transparent border border-neutral-700 rounded" 
+                value={staffForm.email} onChange={e => setStaffForm({...staffForm, email: e.target.value})} />
+              
+              {/* NEW PHONE FIELD */}
+              <input required type="tel" placeholder="Mobile Number" className="w-full p-2 bg-transparent border border-neutral-700 rounded" 
+                value={staffForm.phone} onChange={e => setStaffForm({...staffForm, phone: e.target.value})} />
+
+              <input required minLength="10" placeholder="Password (min 10 characters)" className="w-full p-2 bg-transparent border border-neutral-700 rounded" 
+                value={staffForm.password} onChange={e => setStaffForm({...staffForm, password: e.target.value})} />
+                <select className="w-full p-2 bg-transparent border border-neutral-700 rounded [&>option]:bg-neutral-900" 
+                  value={staffForm.role} onChange={e => setStaffForm({...staffForm, role: e.target.value})}>
+                  <option value="ADMIN">Admin</option>
+                  <option value="MANAGER">Manager</option>
+                  <option value="CAPTAIN">Captain</option>
+                  <option value="CASHIER">Cashier</option>
+                  <option value="RECEPTIONIST">Receptionist</option>
+                  <option value="WAITER">Waiter</option>
+                </select>
+              <div className="flex gap-2 pt-2">
+                <button type="submit" className={button}>Create Account</button>
+                <button type="button" className={ghost} onClick={() => setShowStaffForm(false)}>Cancel</button>
+              </div>
+            </form>
+          )}
+
           {Object.entries(byRole).map(([role, n]) => <div key={role} className={`${card} flex justify-between`}><span>{role}</span><span className="text-[#D4A63A]">{n}</span></div>)}
-          {data.staff.length === 0 ? <Empty>No staff yet. Add them from the Manager dashboard or the Admin page.</Empty> : null}
+          {data.staff.length === 0 && !showStaffForm ? <Empty>No staff yet. Add them from the Manager dashboard or the Admin page.</Empty> : null}
         </Section>
 
         <Section title="Expenses to approve">

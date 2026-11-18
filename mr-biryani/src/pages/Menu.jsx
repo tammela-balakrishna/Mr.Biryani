@@ -1,21 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { addToCart } from '../utils/cart'
 import { api } from '../api/client'
+import { useAuth } from '../auth/AuthContext'
 import { MotionStyles, Reveal, SafeImg } from '../components/Motion'
-
 
 const base = 'https://images.unsplash.com'
 const images = {
   biryani: `${base}/photo-1563379091339-03246963d96c?auto=format&fit=crop&w=700&q=85`,
   family: `${base}/photo-1589302168068-964664d93dc0?auto=format&fit=crop&w=700&q=85`,
   starters: `${base}/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=700&q=85`,
-  // Added a public background image for the page
   background: `${base}/photo-1552566626-52f8b828add9?auto=format&fit=crop&w=1920&q=80`,
 }
 
-/* Extra photos so cards in one category are not all identical */
-// Category images are chosen by name; everything else comes from the live menu API.
 const imageFor = (name) => (/family/i.test(name) ? images.family : /starter/i.test(name) ? images.starters : images.biryani)
 
 function Menu() {
@@ -23,6 +20,11 @@ function Menu() {
   const [menu, setMenu] = useState([])
   const [loadError, setLoadError] = useState('')
   const navigate = useNavigate()
+  
+  const [searchParams] = useSearchParams()
+  const tableId = searchParams.get('tableId')
+  const branchId = searchParams.get('branchId')
+  const { hasPermission } = useAuth()
 
   useEffect(() => {
     api.get('/api/v1/menu')
@@ -48,37 +50,41 @@ function Menu() {
     }))
   }, [menu, activeCategory])
 
-  const handleAddToCart = (item) => {
+  const handleAddToCart = async (item) => {
+    // Add item to local storage cart
     addToCart({ id: item.id, name: item.name, price: item.price })
-    navigate('/order')
+    
+    // Check if it's a waiter, and carry the parameters to the Order page
+    if (tableId && branchId && hasPermission('orders.create')) {
+      navigate(`/order?tableId=${tableId}&branchId=${branchId}`)
+    } else {
+      // Normal Customer
+      navigate('/order')
+    }
   }
 
   return (
     <main className="min-h-screen text-white relative overflow-hidden">
       <MotionStyles />
 
-      {/* Global Background Image & Overlay */}
       <div 
         className="absolute inset-0 -z-20 bg-cover bg-center bg-fixed"
         style={{ backgroundImage: `url(${images.background})` }}
       />
-      <div className="absolute inset-0 -z-10 bg-black/80" /> {/* Dark overlay so text remains readable */}
+      <div className="absolute inset-0 -z-10 bg-black/80" />
 
-      {/* Background Ambient Gradients */}
       <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-br from-red-900/30 via-transparent to-transparent pointer-events-none -z-10" />
       <div className="absolute top-0 right-0 w-full h-[500px] bg-gradient-to-bl from-orange-900/30 via-transparent to-transparent pointer-events-none -z-10" />
 
-      {/* Header Section */}
       <section className="pt-16 pb-8 text-center relative z-10">
         <Reveal>
           <h1 className="text-4xl md:text-5xl font-bold mb-3 tracking-wide drop-shadow-md">
-            Our Menu
+            {tableId ? `Taking Order for Table` : 'Our Menu'}
           </h1>
           <p className="text-sm md:text-base text-neutral-200 mb-4 drop-shadow">
-            A perfect blend of tradition and taste
+            {tableId ? 'Items added here will be sent directly to the kitchen.' : 'A perfect blend of tradition and taste'}
           </p>
           
-          {/* Vintage Divider */}
           <div className="flex items-center justify-center gap-2 mb-8 opacity-90">
             <span className="h-[1px] w-16 bg-[#FFD700]" />
             <div className="flex gap-1 items-center">
@@ -91,7 +97,6 @@ function Menu() {
             <span className="h-[1px] w-16 bg-[#FFD700]" />
           </div>
 
-          {/* Category Navigation */}
           <div className="flex flex-wrap justify-center gap-2 sm:gap-4 px-4 max-w-4xl mx-auto">
             {categories.map((category) => {
               const isActive = activeCategory === category
@@ -115,13 +120,20 @@ function Menu() {
       </section>
 
       {loadError && <p role="alert" className="mx-auto mt-6 max-w-md rounded-lg bg-red-500/15 p-3 text-center text-sm text-red-200">{loadError}</p>}
-      {/* Menu Grid */}
+      
       <section className="max-w-6xl mx-auto px-4 pb-20 relative z-10">
+        {tableId && (
+            <div className="mb-4 text-center">
+               <button onClick={() => navigate('/waiter')} className="text-[#FFD700] underline text-sm hover:text-white transition-colors">
+                  ← Back to Waiter Dashboard
+               </button>
+            </div>
+        )}
+
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 mt-6">
           {filteredItems.map((item, i) => (
             <Reveal key={item.id} delay={Math.min(i * 50, 400)}>
               <article className="bg-[#f8f9fa] rounded-xl p-4 flex flex-col items-center text-center transition-transform hover:-translate-y-1 hover:shadow-xl hover:shadow-black/50 h-full">
-                {/* Food Image */}
                 <div className="w-full aspect-[4/3] rounded-lg overflow-hidden mb-4 bg-gray-200 shadow-inner">
                   <SafeImg
                     src={item.image}
@@ -131,7 +143,6 @@ function Menu() {
                   />
                 </div>
 
-                {/* Content */}
                 <div className="flex flex-col flex-1 w-full justify-between items-center">
                   <div className="mb-3">
                     <h3 className="text-black font-bold text-sm sm:text-base leading-snug mb-1 whitespace-pre-line">
@@ -151,7 +162,10 @@ function Menu() {
                     disabled={!item.available} onClick={() => handleAddToCart(item)}
                     className="bg-[#FFD700] hover:bg-[#E6C200] text-black font-bold text-sm px-6 py-2 rounded-full transition-colors w-max mt-auto shadow-sm"
                   >
-                    {item.available ? 'Add +' : 'Unavailable'}
+                    {item.available 
+                        ? (tableId ? 'Add to Ticket +' : 'Add +') 
+                        : 'Unavailable'
+                    }
                   </button>
                 </div>
               </article>

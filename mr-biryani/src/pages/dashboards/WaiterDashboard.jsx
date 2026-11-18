@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import { floorApi, ordersApi } from '../../api/staff'
 import {
-  useBranch, card, button, ORDER_NEXT, errorText, shortId } from './shared'
+  useBranch, card, button, ghost, ORDER_NEXT, errorText, shortId } from './shared'
 import { Message, Shell, Kpis, Section, Empty } from './ui'
 
-// Waiter: the tables assigned to me and the orders that need moving along.
 export default function WaiterDashboard() {
   const { user, hasPermission } = useAuth()
   const { branchId, error: branchError } = useBranch()
+  const navigate = useNavigate()
   const [tables, setTables] = useState([])
   const [orders, setOrders] = useState([])
   const [error, setError] = useState('')
@@ -22,6 +23,7 @@ export default function WaiterDashboard() {
       setError(errorText(err, 'Could not load your dashboard.'))
     }
   }, [branchId])
+  
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load()
@@ -29,13 +31,17 @@ export default function WaiterDashboard() {
     return () => clearInterval(id)
   }, [load])
 
-  // Matched by account ID, so a name change or two people with the same name cannot mix up tables.
   const mine = tables.filter((t) => t.waiter_user_id && t.waiter_user_id === user?.id)
   const ready = orders.filter((o) => o.status === 'READY').length
 
   const advance = async (order) => {
     setError('')
-    try { await ordersApi.setStatus(order.id, ORDER_NEXT[order.status].to); await load() } catch (err) { setError(errorText(err, 'Could not update the order.')) }
+    try { 
+      await ordersApi.setStatus(order.id, ORDER_NEXT[order.status].to)
+      await load() 
+    } catch (err) { 
+      setError(errorText(err, 'Could not update the order.')) 
+    }
   }
 
   return (
@@ -52,8 +58,22 @@ export default function WaiterDashboard() {
         <Section title="My tables">
           {mine.map((t) => (
             <div key={t.id} className={card}>
-              <p className="font-bold">{t.label} <span className="text-sm font-normal text-neutral-400">· {t.capacity} seats</span></p>
-              <p className="text-sm text-[#D4A63A]">{t.status}</p>
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="font-bold">{t.label} <span className="text-sm font-normal text-neutral-400">· {t.capacity} seats</span></p>
+                  <p className="text-sm text-[#D4A63A]">{t.status}</p>
+                </div>
+                
+                {/* Routes to the Menu page, passing BOTH tableId and branchId */}
+                {hasPermission('orders.create') && (
+                  <button 
+                    className={ghost} 
+                    onClick={() => navigate(`/menu?tableId=${t.id}&branchId=${branchId}`)}
+                  >
+                    + Take Order
+                  </button>
+                )}
+              </div>
             </div>
           ))}
           {mine.length === 0 ? <Empty>No tables are assigned to you yet. Ask the captain to assign one.</Empty> : null}

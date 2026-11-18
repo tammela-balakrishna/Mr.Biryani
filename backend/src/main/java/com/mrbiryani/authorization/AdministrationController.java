@@ -36,6 +36,7 @@ public class AdministrationController {
     public record CreateStaffRequest(
             @NotBlank @Size(min = 2, max = 120) String fullName,
             @NotBlank @Email @Size(max = 254) String email,
+            @NotBlank @Size(min = 10, max = 15) String phone, // Added phone field
             @NotBlank @Size(min = 10, max = 128, message = "Password must be 10-128 characters") String password,
             @NotBlank String role) {}
 
@@ -71,7 +72,7 @@ public class AdministrationController {
             @Valid @RequestBody CreateStaffRequest body, HttpServletRequest req) {
         branchAccess.require(branchId);
         var created = service.createStaff(branchAccess.currentUserId(), branchAccess.hasPermission("users.manage"),
-                branchId, body.email(), body.fullName(), body.password(), body.role(), requestId(req));
+                branchId, body.email(), body.phone(), body.fullName(), body.password(), body.role(), requestId(req));
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("data", Map.of("userId", created.userId())));
     }
 
