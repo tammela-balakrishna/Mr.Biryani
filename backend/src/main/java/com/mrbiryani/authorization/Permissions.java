@@ -71,7 +71,7 @@ public final class Permissions {
                 "kitchen.orders.read", "kitchen.orders.coordinate", "service.status.read", "service.status.update",
                 "inventory.read")));
         m.put(Role.CASHIER, union(staffBase, Set.of(
-                "orders.read", "reservations.read", "service.status.read",
+                "orders.read", "tables.read", "reservations.read", "service.status.read",
                 "billing.generate", "billing.read", "billing.split", "billing.reprint",
                 "payments.collect", "payments.read", "payments.refund", "discounts.apply")));
         // Manager: operational scope. No administration keys, no customer self-service keys,
@@ -79,7 +79,6 @@ public final class Permissions {
         Set<String> manager = new java.util.HashSet<>(ALL);
         manager.removeAll(ADMIN_ONLY);
         manager.removeAll(CUSTOMER_MODULE);
-        manager.removeAll(Set.of("menu.create", "menu.price.update"));
         m.put(Role.MANAGER, Set.copyOf(manager));
         m.put(Role.ADMIN, Set.copyOf(withoutCustomerKeys()));
 

@@ -22,7 +22,9 @@ export const floorApi = {
 
 export const ordersApi = {
   list: (branchId, status) => api.get(`${b(branchId)}/orders${status ? `?status=${status}` : ''}`),
-create: (branchId, input) => api.post(`${b(branchId)}/orders`, input),
+  order: (id) => api.get(`/api/v1/orders/${id}`),
+  create: (branchId, input, idempotencyKey) =>
+    api.post(`${b(branchId)}/orders`, input, { 'Idempotency-Key': idempotencyKey || newIdempotencyKey() }),
   setStatus: (orderId, status) => api.patch(`/api/v1/orders/${orderId}/status`, { status }),
   bills: (branchId, status) => api.get(`${b(branchId)}/bills${status ? `?status=${status}` : ''}`),
   createBill: (branchId, orderId) => api.post(`${b(branchId)}/orders/${orderId}/bill`),
@@ -39,6 +41,7 @@ export const receptionApi = {
   confirm: (branchId, id) => api.post(`${b(branchId)}/reservations/${id}/confirm`),
   checkIn: (branchId, id) => api.post(`${b(branchId)}/reservations/${id}/check-in`),
   walkIn: (branchId, input) => api.post(`${b(branchId)}/walk-ins`, input),
+  cancel: (id) => api.post(`/api/v1/reservations/${id}/cancel`),
 }
 
 export const managerApi = {
@@ -62,7 +65,10 @@ export const managerApi = {
 
 export const menuApi = {
   list: () => api.get('/api/v1/menu'),
+  addItem: (input) => api.post('/api/v1/menu/items', input),
+  addCategory: (input) => api.post('/api/v1/menu/categories', input),
   updateDetails: (itemId, input) => api.patch(`/api/v1/menu/items/${itemId}`, input),
+  updatePrice: (itemId, price) => api.patch(`/api/v1/menu/items/${itemId}/price`, { price }),
   setAvailability: (itemId, available) => api.patch(`/api/v1/menu/items/${itemId}/availability`, { available }),
 }
 

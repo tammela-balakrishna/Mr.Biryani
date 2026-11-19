@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { addToCart } from '../utils/cart'
+import { ArrowRight, ShoppingBag, Check, ArrowLeft } from 'lucide-react'
+import { addToCart, getCart } from '../utils/cart'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { MotionStyles, Reveal, SafeImg } from '../components/Motion'
@@ -19,6 +20,8 @@ function Menu() {
   const [activeCategory, setActiveCategory] = useState('')
   const [menu, setMenu] = useState([])
   const [loadError, setLoadError] = useState('')
+  const [cart, setCart] = useState(() => getCart())
+  const [recentlyAddedId, setRecentlyAddedId] = useState(null)
   const navigate = useNavigate()
   
   const [searchParams] = useSearchParams()
@@ -33,6 +36,16 @@ function Menu() {
         setActiveCategory(data.categories[0]?.name || '')
       })
       .catch(() => setLoadError('Could not load the menu. Please try again shortly.'))
+  }, [])
+
+  useEffect(() => {
+    const handleCartSync = () => setCart(getCart())
+    window.addEventListener('cart-updated', handleCartSync)
+    window.addEventListener('storage', handleCartSync)
+    return () => {
+      window.removeEventListener('cart-updated', handleCartSync)
+      window.removeEventListener('storage', handleCartSync)
+    }
   }, [])
 
   const categories = menu.map((category) => category.name)
@@ -50,15 +63,23 @@ function Menu() {
     }))
   }, [menu, activeCategory])
 
-  const handleAddToCart = async (item) => {
-    // Add item to local storage cart
+  const totalCartCount = useMemo(() => cart.reduce((sum, item) => sum + item.quantity, 0), [cart])
+  const totalCartPrice = useMemo(() => cart.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0), [cart])
+
+  const getItemCartQty = (id) => cart.find((x) => x.id === id)?.quantity || 0
+
+  const handleAddToCart = (item) => {
     addToCart({ id: item.id, name: item.name, price: item.price })
-    
-    // Check if it's a waiter, and carry the parameters to the Order page
+    setRecentlyAddedId(item.id)
+    setTimeout(() => {
+      setRecentlyAddedId((curr) => (curr === item.id ? null : curr))
+    }, 1200)
+  }
+
+  const proceedToOrder = () => {
     if (tableId && branchId && hasPermission('orders.create')) {
       navigate(`/order?tableId=${tableId}&branchId=${branchId}`)
     } else {
-      // Normal Customer
       navigate('/order')
     }
   }
@@ -121,58 +142,124 @@ function Menu() {
 
       {loadError && <p role="alert" className="mx-auto mt-6 max-w-md rounded-lg bg-red-500/15 p-3 text-center text-sm text-red-200">{loadError}</p>}
       
-      <section className="max-w-6xl mx-auto px-4 pb-20 relative z-10">
+      <section className="max-w-6xl mx-auto px-4 pb-28 relative z-10">
         {tableId && (
-            <div className="mb-4 text-center">
-               <button onClick={() => navigate('/waiter')} className="text-[#FFD700] underline text-sm hover:text-white transition-colors">
-                  ← Back to Waiter Dashboard
-               </button>
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#D4A63A]/30 bg-[#111010]/80 p-4 backdrop-blur-md">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              <p className="text-sm font-semibold text-white">
+                Active Table Ticket: <span className="text-[#FFD700]">#{tableId.slice(0, 8).toUpperCase()}</span>
+              </p>
             </div>
+            <button 
+              onClick={() => navigate('/dashboard')} 
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#FFD700] hover:text-white transition-colors"
+            >
+              <ArrowLeft size={14} /> Back to Dashboard
+            </button>
+          </div>
         )}
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 mt-6">
-          {filteredItems.map((item, i) => (
-            <Reveal key={item.id} delay={Math.min(i * 50, 400)}>
-              <article className="bg-[#f8f9fa] rounded-xl p-4 flex flex-col items-center text-center transition-transform hover:-translate-y-1 hover:shadow-xl hover:shadow-black/50 h-full">
-                <div className="w-full aspect-[4/3] rounded-lg overflow-hidden mb-4 bg-gray-200 shadow-inner">
-                  <SafeImg
-                    src={item.image}
-                    alt={item.name}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                </div>
+          {filteredItems.map((item, i) => {
+            const qtyInCart = getItemCartQty(item.id)
+            const isJustAdded = recentlyAddedId === item.id
 
-                <div className="flex flex-col flex-1 w-full justify-between items-center">
-                  <div className="mb-3">
-                    <h3 className="text-black font-bold text-sm sm:text-base leading-snug mb-1 whitespace-pre-line">
-                      {item.name}
-                    </h3>
-                    <p className="text-gray-500 text-xs font-medium">
-                      {item.subtitle}
-                    </p>
+            return (
+              <Reveal key={item.id} delay={Math.min(i * 50, 400)}>
+                <article className="bg-[#f8f9fa] rounded-xl p-4 flex flex-col items-center text-center transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-black/50 h-full relative group">
+                  {qtyInCart > 0 && (
+                    <span className="absolute top-2 right-2 z-10 rounded-full bg-[#111010] px-2.5 py-0.5 text-xs font-bold text-[#FFD700] shadow-md border border-[#FFD700]/30">
+                      {qtyInCart} in ticket
+                    </span>
+                  )}
+
+                  <div className="w-full aspect-[4/3] rounded-lg overflow-hidden mb-4 bg-gray-200 shadow-inner">
+                    <SafeImg
+                      src={item.image}
+                      alt={item.name}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      loading="lazy"
+                    />
                   </div>
-                  
-                  <p className="text-black font-extrabold text-lg sm:text-xl mb-4">
-                    ₹{item.price}
-                  </p>
 
-                  <button
-                    type="button"
-                    disabled={!item.available} onClick={() => handleAddToCart(item)}
-                    className="bg-[#FFD700] hover:bg-[#E6C200] text-black font-bold text-sm px-6 py-2 rounded-full transition-colors w-max mt-auto shadow-sm"
-                  >
-                    {item.available 
-                        ? (tableId ? 'Add to Ticket +' : 'Add +') 
-                        : 'Unavailable'
-                    }
-                  </button>
-                </div>
-              </article>
-            </Reveal>
-          ))}
+                  <div className="flex flex-col flex-1 w-full justify-between items-center">
+                    <div className="mb-3">
+                      <h3 className="text-black font-bold text-sm sm:text-base leading-snug mb-1 whitespace-pre-line">
+                        {item.name}
+                      </h3>
+                      <p className="text-gray-500 text-xs font-medium">
+                        {item.subtitle}
+                      </p>
+                    </div>
+                    
+                    <p className="text-black font-extrabold text-lg sm:text-xl mb-4">
+                      ₹{item.price}
+                    </p>
+
+                    <button
+                      type="button"
+                      disabled={!item.available}
+                      onClick={() => handleAddToCart(item)}
+                      className={`font-bold text-sm px-5 py-2.5 rounded-full transition-all w-max mt-auto shadow-sm flex items-center justify-center gap-1.5 active:scale-95 ${
+                        !item.available
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : isJustAdded
+                          ? 'bg-emerald-600 text-white shadow-emerald-500/20'
+                          : 'bg-[#FFD700] hover:bg-[#E6C200] text-black shadow-md hover:shadow-lg'
+                      }`}
+                    >
+                      {isJustAdded ? (
+                        <>
+                          <Check size={16} /> Added!
+                        </>
+                      ) : !item.available ? (
+                        'Unavailable'
+                      ) : tableId ? (
+                        'Add to Ticket +'
+                      ) : (
+                        'Add +'
+                      )}
+                    </button>
+                  </div>
+                </article>
+              </Reveal>
+            )
+          })}
         </div>
       </section>
+
+      {/* Sticky Bottom Floating Ticket / Cart Bar */}
+      {totalCartCount > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[94%] max-w-2xl">
+          <div className="flex items-center justify-between gap-4 rounded-2xl border border-[#D4A63A]/50 bg-[#111010]/95 p-3.5 sm:p-4 shadow-2xl backdrop-blur-xl ring-1 ring-[#D4A63A]/25">
+            <div className="flex items-center gap-3 pl-1">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#D4A63A] text-black font-bold shadow-md">
+                <ShoppingBag size={20} />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-white flex items-center gap-2">
+                  <span>{totalCartCount} {totalCartCount === 1 ? 'item' : 'items'}</span>
+                  {tableId && (
+                    <span className="rounded-md bg-[#D4A63A]/20 px-2 py-0.5 text-[11px] text-[#D4A63A] font-semibold">
+                      Table #{tableId.slice(0, 6).toUpperCase()}
+                    </span>
+                  )}
+                </p>
+                <p className="text-xs font-semibold text-[#D4A63A]">₹{totalCartPrice.toFixed(2)} total</p>
+              </div>
+            </div>
+
+            <button
+              onClick={proceedToOrder}
+              className="flex items-center gap-2 rounded-xl bg-[#D4A63A] px-5 py-2.5 sm:px-6 sm:py-3 text-sm font-bold text-black transition-all hover:bg-[#E8BD57] hover:scale-105 active:scale-95 shadow-lg shadow-[#D4A63A]/20"
+            >
+              <span>{tableId ? 'Review & Send Ticket' : 'Proceed to Checkout'}</span>
+              <ArrowRight size={17} />
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   )
 }

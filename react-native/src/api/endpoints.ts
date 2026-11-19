@@ -96,6 +96,19 @@ export const staffApi = {
   setOrderStatus: async (orderId: string, status: string): Promise<Order> =>
     orderSchema.parse(await request(`/api/v1/orders/${orderId}/status`, { method: 'PATCH', body: { status } })),
 
+  placeForTable: async (
+    branchId: string,
+    input: { tableId: string; items: { menuItemId: string; quantity: number }[] },
+    idempotencyKey: string,
+  ): Promise<Order> =>
+    orderSchema.parse(
+      await request(`/api/v1/branches/${branchId}/orders`, {
+        method: 'POST',
+        body: input,
+        headers: { 'Idempotency-Key': idempotencyKey },
+      }),
+    ),
+
   createBill: async (branchId: string, orderId: string): Promise<Bill> =>
     billSchema.parse(await request(`/api/v1/branches/${branchId}/orders/${orderId}/bill`, { method: 'POST' })),
 

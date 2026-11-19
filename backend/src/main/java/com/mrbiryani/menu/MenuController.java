@@ -55,14 +55,14 @@ public class MenuController {
     }
 
     @PostMapping("/categories")
-    @PreAuthorize("hasAuthority('PERM_menu.create')")
+    @PreAuthorize("hasAuthority('PERM_menu.create') or hasAuthority('PERM_menu.update')")
     ResponseEntity<Map<String, Object>> createCategory(@Valid @RequestBody CategoryRequest body) {
         UUID id = menu.createCategory(body.name(), body.sortOrder() == null ? 0 : body.sortOrder());
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("data", Map.of("id", id)));
     }
 
     @PostMapping("/items")
-    @PreAuthorize("hasAuthority('PERM_menu.create')")
+    @PreAuthorize("hasAuthority('PERM_menu.create') or hasAuthority('PERM_menu.update')")
     ResponseEntity<Map<String, Object>> createItem(@Valid @RequestBody ItemRequest body) {
         UUID id = menu.createItem(body.categoryId(), body.name(), body.description(), body.price(), body.taxRate(),
                 body.available() == null || body.available());
@@ -80,7 +80,7 @@ public class MenuController {
     }
 
     @PatchMapping("/items/{id}/price")
-    @PreAuthorize("hasAuthority('PERM_menu.price.update')")
+    @PreAuthorize("hasAuthority('PERM_menu.price.update') or hasAuthority('PERM_menu.update')")
     ResponseEntity<Void> updatePrice(@PathVariable UUID id, @Valid @RequestBody PriceRequest body) {
         menu.updatePrice(id, body.price());
         return ResponseEntity.noContent().build();

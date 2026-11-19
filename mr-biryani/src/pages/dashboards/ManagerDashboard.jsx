@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Plus, Search, Utensils, Layers, Eye, EyeOff, X, Edit3 } from 'lucide-react'
 import { useAuth } from '../../auth/AuthContext'
 import { floorApi, managerApi, feedbackApi, menuApi } from '../../api/staff'
 import { useBranch, card, button, ghost, field, money, daysAgo, today, errorText, TABLE_STATUSES } from './shared'
@@ -35,6 +36,12 @@ export default function ManagerDashboard() {
   const [newTable, setNewTable] = useState({ label: '', capacity: '4' })
   const [editTable, setEditTable] = useState(null)
   const [editMenu, setEditMenu] = useState(null)
+  const [showAddItem, setShowAddItem] = useState(false)
+  const [showAddCat, setShowAddCat] = useState(false)
+  const [newDish, setNewDish] = useState({ categoryId: '', name: '', description: '', price: '', taxRate: '5.0', available: true })
+  const [newCat, setNewCat] = useState({ name: '', sortOrder: '0' })
+  const [menuFilter, setMenuFilter] = useState('ALL')
+  const [menuSearch, setMenuSearch] = useState('')
   const [expense, setExpense] = useState({ category: '', amount: '', description: '' })
   const [editExpense, setEditExpense] = useState(null)
   const [roleDraft, setRoleDraft] = useState({})
@@ -94,20 +101,42 @@ export default function ManagerDashboard() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {attention.map(([target, label, count]) => (
             <button key={label} onClick={() => setTab(target)}
-              className={`${card} text-left hover:border-[#D4A63A] ${count > 0 ? 'border-[#D4A63A]/60' : ''}`}>
-              <p className="text-xs uppercase tracking-wider text-neutral-400">{label}</p>
-              <p className={`mt-2 text-3xl font-bold ${count > 0 ? 'text-[#D4A63A]' : 'text-neutral-500'}`}>{count}</p>
+              className={`rounded-2xl border p-5 text-left transition-all duration-200 ${
+                count > 0 
+                  ? 'border-[#D4A63A] bg-gradient-to-br from-[#1d1610] to-[#111010] shadow-lg shadow-[#D4A63A]/10' 
+                  : 'border-white/10 bg-[#111010] hover:border-white/20'
+              }`}>
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400">{label}</p>
+                {count > 0 && <span className="h-2 w-2 rounded-full bg-[#D4A63A] animate-ping" />}
+              </div>
+              <p className={`mt-3 text-3xl font-extrabold ${count > 0 ? 'text-[#D4A63A]' : 'text-neutral-500'}`}>{count}</p>
             </button>
           ))}
         </div>
       </section>
 
-      <nav className="flex flex-wrap gap-2 border-b border-white/10 pb-3" aria-label="Manager sections">
-        {TABS.map(([id, label]) => (
-          <button key={id} onClick={() => setTab(id)} aria-current={tab === id ? 'page' : undefined}
-            className={tab === id ? button : ghost}>{label}</button>
-        ))}
-      </nav>
+      <div className="rounded-2xl border border-white/10 bg-[#111010]/80 p-1.5 backdrop-blur-md">
+        <nav className="flex flex-wrap gap-1.5" aria-label="Manager sections">
+          {TABS.map(([id, label]) => {
+            const isActive = tab === id
+            return (
+              <button
+                key={id}
+                onClick={() => setTab(id)}
+                aria-current={isActive ? 'page' : undefined}
+                className={`rounded-xl px-4 py-2.5 text-xs sm:text-sm font-bold transition-all duration-200 ${
+                  isActive
+                    ? 'bg-[#D4A63A] text-black shadow-md shadow-[#D4A63A]/25'
+                    : 'text-neutral-300 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                {label}
+              </button>
+            )
+          })}
+        </nav>
+      </div>
 
       {tab === 'overview' ? (
         <div className="grid gap-8 lg:grid-cols-3">
@@ -244,41 +273,384 @@ export default function ManagerDashboard() {
       ) : null}
 
       {tab === 'menu' ? (
-        <section className="space-y-4">
-          <p className="text-sm text-neutral-400">Prices are set by the Admin. Here you can rename dishes, edit their descriptions and switch them on or off for customers.</p>
-          {data.menu.map((c) => (
-            <div key={c.id ?? c.name} className="space-y-2">
-              <h3 className="font-serif text-lg font-bold text-[#D4A63A]">{c.name}</h3>
-              {(c.items || []).map((i) => editMenu?.id === i.id ? (
-                <div key={i.id} className={`${card} grid gap-2 sm:grid-cols-3`}>
-                  <input className={field} aria-label="Dish name" value={editMenu.name} onChange={(e) => setEditMenu({ ...editMenu, name: e.target.value })} />
-                  <input className={`${field} sm:col-span-1`} aria-label="Description" value={editMenu.description} onChange={(e) => setEditMenu({ ...editMenu, description: e.target.value })} />
-                  <div className="flex gap-2">
-                    <button className={button} onClick={() => act(async () => { await menuApi.updateDetails(i.id, { name: editMenu.name.trim(), description: editMenu.description.trim() }); setEditMenu(null) }, 'Dish saved.')}>Save</button>
-                    <button className={ghost} onClick={() => setEditMenu(null)}>Cancel</button>
-                  </div>
-                </div>
-              ) : (
-                <div key={i.id} className={`${card} flex flex-wrap items-center justify-between gap-3`}>
-                  <div>
-                    <p className={`font-bold ${i.available ? '' : 'text-neutral-500 line-through'}`}>{i.name} <span className="text-sm font-normal text-neutral-400">· ₹{money(i.price)}</span></p>
-                    {i.description ? <p className="text-sm text-neutral-400">{i.description}</p> : null}
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {hasPermission('menu.availability.update') ? (
-                      <button className={ghost} onClick={() => act(() => menuApi.setAvailability(i.id, !i.available), i.available ? 'Dish switched off.' : 'Dish switched on.')}>
-                        {i.available ? 'Switch off' : 'Switch on'}
-                      </button>
-                    ) : null}
-                    {hasPermission('menu.update') ? (
-                      <button className={ghost} onClick={() => setEditMenu({ id: i.id, name: i.name, description: i.description || '' })}>Edit</button>
-                    ) : null}
-                  </div>
-                </div>
-              ))}
+        <section className="space-y-6">
+          {/* Top Bar: Title, description, and quick actions */}
+          <div className="flex flex-col justify-between gap-4 rounded-2xl border border-white/10 bg-gradient-to-r from-[#171412] to-[#121110] p-6 sm:flex-row sm:items-center">
+            <div>
+              <div className="flex items-center gap-2">
+                <Utensils className="h-5 w-5 text-[#D4A63A]" />
+                <h3 className="font-serif text-xl font-bold text-neutral-100">Menu Studio & Catalog</h3>
+              </div>
+              <p className="mt-1 text-sm text-neutral-400">
+                Manage Andhra signature delicacies, real-time availability, descriptions, and pricing.
+              </p>
             </div>
-          ))}
-          {menuItems.length === 0 ? <Empty>The menu is empty.</Empty> : null}
+            <div className="flex flex-wrap items-center gap-2">
+              {(hasPermission('menu.create') || hasPermission('menu.update')) ? (
+                <>
+                  <button
+                    onClick={() => { setShowAddItem(!showAddItem); setShowAddCat(false) }}
+                    className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#E0B246] to-[#C39327] px-4 py-2.5 text-sm font-semibold text-black shadow-lg shadow-[#D4A63A]/20 transition hover:brightness-110 active:scale-95"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>Add Dish</span>
+                  </button>
+                  <button
+                    onClick={() => { setShowAddCat(!showAddCat); setShowAddItem(false) }}
+                    className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-semibold text-neutral-200 transition hover:border-[#D4A63A]/50 hover:bg-white/10 active:scale-95"
+                  >
+                    <Layers className="h-4 w-4 text-[#D4A63A]" />
+                    <span>Add Category</span>
+                  </button>
+                </>
+              ) : null}
+            </div>
+          </div>
+
+          {/* Add Category Panel */}
+          {showAddCat ? (
+            <div className="rounded-2xl border border-[#D4A63A]/40 bg-gradient-to-b from-[#1c1815] to-[#111010] p-5 shadow-2xl">
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Layers className="h-5 w-5 text-[#D4A63A]" />
+                  <h4 className="font-serif text-lg font-bold text-white">Create New Menu Category</h4>
+                </div>
+                <button onClick={() => setShowAddCat(false)} className="rounded-lg p-1 text-neutral-400 hover:text-white">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="sm:col-span-2">
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-neutral-400">Category Name</label>
+                  <input
+                    className={field}
+                    placeholder="e.g. Traditional Andhra Biryanis, Starters, Desserts"
+                    value={newCat.name}
+                    onChange={(e) => setNewCat({ ...newCat, name: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-neutral-400">Display Order</label>
+                  <input
+                    className={field}
+                    type="number"
+                    placeholder="0"
+                    value={newCat.sortOrder}
+                    onChange={(e) => setNewCat({ ...newCat, sortOrder: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="mt-4 flex justify-end gap-2">
+                <button onClick={() => setShowAddCat(false)} className={ghost}>Cancel</button>
+                <button
+                  disabled={!newCat.name.trim()}
+                  onClick={() => act(async () => {
+                    await menuApi.addCategory({ name: newCat.name.trim(), sortOrder: Number(newCat.sortOrder || (data.menu.length + 1)) })
+                    setNewCat({ name: '', sortOrder: '0' })
+                    setShowAddCat(false)
+                  }, 'Category created successfully.')}
+                  className={button}
+                >
+                  Create Category
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          {/* Add Dish Panel */}
+          {showAddItem ? (
+            <div className="rounded-2xl border border-[#D4A63A]/40 bg-gradient-to-b from-[#1c1815] to-[#111010] p-5 shadow-2xl">
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Utensils className="h-5 w-5 text-[#D4A63A]" />
+                  <h4 className="font-serif text-lg font-bold text-white">Add New Dish to Menu</h4>
+                </div>
+                <button onClick={() => setShowAddItem(false)} className="rounded-lg p-1 text-neutral-400 hover:text-white">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div>
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-neutral-400">Category</label>
+                  <select
+                    className={field}
+                    value={newDish.categoryId || (data.menu[0]?.id ?? '')}
+                    onChange={(e) => setNewDish({ ...newDish, categoryId: e.target.value })}
+                  >
+                    {data.menu.map((c) => (
+                      <option key={c.id ?? c.name} value={c.id} className="bg-neutral-900 text-white">
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-neutral-400">Dish Name</label>
+                  <input
+                    className={field}
+                    placeholder="e.g. Andhra Gongura Mutton Biryani"
+                    value={newDish.name}
+                    onChange={(e) => setNewDish({ ...newDish, name: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-neutral-400">Price (₹)</label>
+                  <input
+                    className={field}
+                    placeholder="e.g. 290.00"
+                    inputMode="decimal"
+                    value={newDish.price}
+                    onChange={(e) => setNewDish({ ...newDish, price: num(e.target.value) })}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-neutral-400">Tax Rate (%)</label>
+                  <input
+                    className={field}
+                    placeholder="5.0"
+                    inputMode="decimal"
+                    value={newDish.taxRate}
+                    onChange={(e) => setNewDish({ ...newDish, taxRate: num(e.target.value) })}
+                  />
+                </div>
+                <div className="sm:col-span-2 lg:col-span-3">
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-neutral-400">Description & Spice Profile</label>
+                  <input
+                    className={field}
+                    placeholder="e.g. Slow-cooked tender mutton with tangy gongura leaves and fragrant basmati rice."
+                    value={newDish.description}
+                    onChange={(e) => setNewDish({ ...newDish, description: e.target.value })}
+                  />
+                </div>
+                <div className="flex items-center gap-2 pt-6">
+                  <label className="flex cursor-pointer items-center gap-2 text-sm text-neutral-200">
+                    <input
+                      type="checkbox"
+                      checked={newDish.available}
+                      onChange={(e) => setNewDish({ ...newDish, available: e.target.checked })}
+                      className="h-4 w-4 rounded border-white/20 bg-neutral-800 text-[#D4A63A] focus:ring-[#D4A63A]"
+                    />
+                    <span>Available immediately</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="mt-4 flex justify-end gap-2">
+                <button onClick={() => setShowAddItem(false)} className={ghost}>Cancel</button>
+                <button
+                  disabled={!newDish.name.trim() || !newDish.price}
+                  onClick={() => act(async () => {
+                    const catId = newDish.categoryId || data.menu[0]?.id
+                    if (!catId) throw new Error('Please select or create a category first.')
+                    await menuApi.addItem({
+                      categoryId: catId,
+                      name: newDish.name.trim(),
+                      description: newDish.description.trim(),
+                      price: Number(newDish.price),
+                      taxRate: Number(newDish.taxRate || 5.0),
+                      available: newDish.available,
+                    })
+                    setNewDish({ categoryId: '', name: '', description: '', price: '', taxRate: '5.0', available: true })
+                    setShowAddItem(false)
+                  }, 'Dish added to menu.')}
+                  className={button}
+                >
+                  Publish to Menu
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          {/* Search Bar & Category Filter Pills */}
+          <div className="space-y-3">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+              <input
+                className={`${field} pl-10 pr-10`}
+                placeholder="Search dishes by name or description..."
+                value={menuSearch}
+                onChange={(e) => setMenuSearch(e.target.value)}
+              />
+              {menuSearch ? (
+                <button onClick={() => setMenuSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-neutral-400 hover:text-white">
+                  Clear
+                </button>
+              ) : null}
+            </div>
+
+            {/* Category Filter Pills */}
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => setMenuFilter('ALL')}
+                className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold transition ${
+                  menuFilter === 'ALL'
+                    ? 'bg-[#D4A63A] text-black shadow-md shadow-[#D4A63A]/20'
+                    : 'border border-white/10 bg-white/5 text-neutral-300 hover:border-white/20 hover:bg-white/10'
+                }`}
+              >
+                All Dishes ({menuItems.length})
+              </button>
+              {data.menu.map((c) => {
+                const count = (c.items || []).length
+                const isActive = menuFilter === c.name || menuFilter === c.id
+                return (
+                  <button
+                    key={c.id ?? c.name}
+                    onClick={() => setMenuFilter(c.name)}
+                    className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold transition ${
+                      isActive
+                        ? 'bg-[#D4A63A] text-black shadow-md shadow-[#D4A63A]/20'
+                        : 'border border-white/10 bg-white/5 text-neutral-300 hover:border-white/20 hover:bg-white/10'
+                    }`}
+                  >
+                    {c.name} ({count})
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Catalog Sections */}
+          <div className="space-y-6">
+            {data.menu
+              .filter((c) => menuFilter === 'ALL' || menuFilter === c.name || menuFilter === c.id)
+              .map((c) => {
+                const filteredItems = (c.items || []).filter((i) => {
+                  if (!menuSearch.trim()) return true
+                  const q = menuSearch.toLowerCase()
+                  return i.name?.toLowerCase().includes(q) || i.description?.toLowerCase().includes(q)
+                })
+
+                if (filteredItems.length === 0 && menuSearch.trim()) return null
+
+                return (
+                  <div key={c.id ?? c.name} className="space-y-3">
+                    <div className="flex items-center gap-2 border-b border-white/10 pb-2">
+                      <div className="h-2 w-2 rounded-full bg-[#D4A63A]" />
+                      <h4 className="font-serif text-lg font-bold text-[#D4A63A]">{c.name}</h4>
+                      <span className="text-xs text-neutral-500">({filteredItems.length} items)</span>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {filteredItems.map((i) => (
+                        <div
+                          key={i.id}
+                          className={`rounded-2xl border p-4 transition-all duration-200 ${
+                            i.available
+                              ? 'border-white/10 bg-gradient-to-br from-[#151311] to-[#0d0c0c] hover:border-white/20'
+                              : 'border-white/5 bg-[#0a0a0a]/80 opacity-70 hover:opacity-100'
+                          }`}
+                        >
+                          {editMenu?.id === i.id ? (
+                            <div className="space-y-3">
+                              <div>
+                                <label className="mb-1 block text-xs font-semibold text-neutral-400">Dish Name</label>
+                                <input
+                                  className={field}
+                                  value={editMenu.name}
+                                  onChange={(e) => setEditMenu({ ...editMenu, name: e.target.value })}
+                                />
+                              </div>
+                              <div>
+                                <label className="mb-1 block text-xs font-semibold text-neutral-400">Price (₹)</label>
+                                <input
+                                  className={field}
+                                  inputMode="decimal"
+                                  value={editMenu.price}
+                                  onChange={(e) => setEditMenu({ ...editMenu, price: num(e.target.value) })}
+                                />
+                              </div>
+                              <div>
+                                <label className="mb-1 block text-xs font-semibold text-neutral-400">Description</label>
+                                <input
+                                  className={field}
+                                  value={editMenu.description}
+                                  onChange={(e) => setEditMenu({ ...editMenu, description: e.target.value })}
+                                />
+                              </div>
+                              <div className="flex justify-end gap-2 pt-2">
+                                <button className={ghost} onClick={() => setEditMenu(null)}>Cancel</button>
+                                <button
+                                  className={button}
+                                  onClick={() => act(async () => {
+                                    await menuApi.updateDetails(i.id, {
+                                      name: editMenu.name.trim(),
+                                      description: editMenu.description.trim(),
+                                    })
+                                    if (editMenu.price && Number(editMenu.price) !== Number(i.price)) {
+                                      await menuApi.updatePrice(i.id, Number(editMenu.price))
+                                    }
+                                    setEditMenu(null)
+                                  }, 'Dish updated.')}
+                                >
+                                  Save Changes
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex h-full flex-col justify-between gap-3">
+                              <div>
+                                <div className="flex items-start justify-between gap-2">
+                                  <h5 className={`font-semibold ${i.available ? 'text-white' : 'text-neutral-400 line-through'}`}>
+                                    {i.name}
+                                  </h5>
+                                  <span className="shrink-0 rounded-lg bg-[#D4A63A]/15 px-2.5 py-0.5 font-mono text-sm font-bold text-[#E0B246]">
+                                    ₹{money(i.price)}
+                                  </span>
+                                </div>
+                                {i.description ? (
+                                  <p className="mt-1 line-clamp-2 text-xs text-neutral-400">{i.description}</p>
+                                ) : (
+                                  <p className="mt-1 text-xs italic text-neutral-600">No description provided</p>
+                                )}
+                              </div>
+
+                              <div className="flex items-center justify-between border-t border-white/5 pt-3">
+                                <span
+                                  className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${
+                                    i.available ? 'bg-green-500/10 text-green-400' : 'bg-neutral-800 text-neutral-400'
+                                  }`}
+                                >
+                                  <span className={`h-1.5 w-1.5 rounded-full ${i.available ? 'bg-green-400' : 'bg-neutral-500'}`} />
+                                  {i.available ? 'Available' : 'Switched off'}
+                                </span>
+
+                                <div className="flex items-center gap-1.5">
+                                  {hasPermission('menu.availability.update') ? (
+                                    <button
+                                      className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-neutral-300 transition hover:bg-white/10 active:scale-95"
+                                      onClick={() => act(() => menuApi.setAvailability(i.id, !i.available), i.available ? 'Dish switched off.' : 'Dish switched on.')}
+                                      title={i.available ? 'Switch off for customer orders' : 'Make available for orders'}
+                                    >
+                                      {i.available ? <EyeOff className="h-3.5 w-3.5 text-amber-400" /> : <Eye className="h-3.5 w-3.5 text-green-400" />}
+                                      <span>{i.available ? 'Switch off' : 'Switch on'}</span>
+                                    </button>
+                                  ) : null}
+
+                                  {(hasPermission('menu.update') || hasPermission('menu.price.update')) ? (
+                                    <button
+                                      className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-neutral-300 transition hover:border-[#D4A63A]/40 hover:bg-[#D4A63A]/10 hover:text-[#E0B246] active:scale-95"
+                                      onClick={() => setEditMenu({ id: i.id, name: i.name, description: i.description || '', price: String(Number(i.price)) })}
+                                      title="Edit dish name, description or price"
+                                    >
+                                      <Edit3 className="h-3.5 w-3.5" />
+                                      <span>Edit</span>
+                                    </button>
+                                  ) : null}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
+
+            {menuItems.length === 0 ? <Empty>The menu is empty. Click "+ Add Dish" above to create your first signature dish.</Empty> : null}
+          </div>
         </section>
       ) : null}
 

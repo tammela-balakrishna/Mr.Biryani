@@ -23,9 +23,11 @@ function Navbar() {
     refresh()
     window.addEventListener('scroll', refresh)
     window.addEventListener('storage', refresh)
+    window.addEventListener('cart-updated', refresh)
     return () => {
       window.removeEventListener('scroll', refresh)
       window.removeEventListener('storage', refresh)
+      window.removeEventListener('cart-updated', refresh)
     }
   }, [location.pathname])
 

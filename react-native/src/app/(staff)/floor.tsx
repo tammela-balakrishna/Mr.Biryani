@@ -1,4 +1,5 @@
 import { FlatList, Pressable, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { operationsApi, staffApi } from '../../api/endpoints';
 import { EmptyState, ErrorText, Loading, Screen } from '../../components/ui';
@@ -11,6 +12,7 @@ const STATUSES = ['AVAILABLE', 'OCCUPIED', 'RESERVED', 'CLEANING'] as const;
 // Floor view. The table list comes from the server; a device-local copy is never authoritative.
 export default function FloorScreen() {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const { hasPermission } = useAuth();
   const branches = useBranches();
   const branchId = branches.data?.[0]?.id;
@@ -37,6 +39,7 @@ export default function FloorScreen() {
   if (branches.isPending || tables.isPending) return <Loading />;
   if (!branchId) return <Screen><EmptyState title="No branch available" /></Screen>;
   const canChange = hasPermission('tables.allocate') || hasPermission('tables.release');
+  const canTakeOrder = hasPermission('orders.create');
 
   return (
     <Screen>
@@ -53,6 +56,26 @@ export default function FloorScreen() {
             <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700' }}>{item.label}</Text>
             <Text style={{ color: colors.textMuted }}>{item.capacity} seats · {item.status}</Text>
             <Text style={{ color: colors.textMuted, fontSize: 12 }}>{item.waiter ? `Waiter: ${item.waiter}` : 'No waiter assigned'}</Text>
+            
+            {canTakeOrder && (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Take order for ${item.label}`}
+                onPress={() => router.push(`/menu?tableId=${item.id}&branchId=${branchId}`)}
+                style={{
+                  marginTop: 4,
+                  paddingHorizontal: 8,
+                  minHeight: 36,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  borderRadius: 8,
+                  backgroundColor: colors.gold,
+                }}
+              >
+                <Text style={{ color: colors.onGold, fontSize: 12, fontWeight: '700' }}>+ Take Order</Text>
+              </Pressable>
+            )}
+
             {hasPermission('tables.assign') && (waiters.data?.length ?? 0) > 0 ? (
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
                 {waiters.data!.map((w) => (

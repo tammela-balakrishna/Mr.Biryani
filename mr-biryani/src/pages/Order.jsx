@@ -4,7 +4,6 @@ import { ArrowRight, Minus, Plus, ShoppingBag, Trash2, CheckCircle2 } from 'luci
 import { getCart, saveCart } from '../utils/cart'
 import { useAuth } from '../auth/AuthContext'
 import { api, ApiError, newIdempotencyKey } from '../api/client'
-import { ordersApi } from '../api/staff'
 
 const field = 'w-full rounded-xl border border-white/10 bg-[#080808] px-4 py-3 text-white outline-none focus:border-[#D4A63A]'
 
@@ -54,7 +53,8 @@ const submit = async (event) => {
     }
     
     if (!cart.length) return setError('Your cart is empty.')
-    if (!branchId) return setError('Choose a branch.')
+    let targetBranchId = branchId || (branches.length > 0 ? branches[0].id : '')
+    if (!targetBranchId) return setError('Choose a branch.')
     
     // Strict safeguard: Prevent Waiters from proceeding if tableId was lost from the URL
     if (isStaff && !tableId) {
@@ -69,18 +69,18 @@ const submit = async (event) => {
       
       if (isStaff) {
         // WAITER: Place order directly to the branch table endpoint & unwrap standard { data } response
-        const response = await api.post(`/api/v1/branches/${branchId}/orders`, {
+        const response = await api.post(`/api/v1/branches/${targetBranchId}/orders`, {
           tableId: tableId,
           items: cart.map((item) => ({ 
             menuItemId: item.id, 
             quantity: item.quantity 
           })),
-        })
+        }, { 'Idempotency-Key': attemptKey.current })
         order = response.data || response;
       } else {
         // CUSTOMER: Place standard online order
         const response = await api.post('/api/v1/orders', {
-          branchId,
+          branchId: targetBranchId,
           items: cart.map((item) => ({ menuItemId: item.id, quantity: item.quantity })),
         }, { 'Idempotency-Key': attemptKey.current })
         order = response.data || response;
@@ -96,50 +96,90 @@ const submit = async (event) => {
     }
   }
 
+  const menuUrl = tableId && branchId ? `/menu?tableId=${tableId}&branchId=${branchId}` : '/menu'
+
   return (
     <main className="min-h-screen bg-[#080808] text-white">
-      <section className="bg-gradient-to-br from-[#321010] to-[#100c08] px-5 py-16 text-center">
-        <ShoppingBag size={36} className="mx-auto mb-4 text-[#D4A63A]" />
-        <h1 className="font-serif text-4xl font-bold sm:text-5xl">Your <span className="text-[#D4A63A]">Order</span></h1>
+      <section className="bg-gradient-to-br from-[#321010] to-[#100c08] px-5 py-14 text-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-radial from-[#D4A63A]/5 to-transparent pointer-events-none" />
+        
+        {isStaff && tableId ? (
+          <div className="relative z-10">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#D4A63A]/40 bg-[#D4A63A]/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-[#D4A63A] mb-3">
+              <span>Staff Terminal</span>
+              <span>•</span>
+              <span>Table #{tableId.slice(0, 8).toUpperCase()}</span>
+            </div>
+            <h1 className="font-serif text-3xl font-bold sm:text-5xl">Kitchen <span className="text-[#D4A63A]">Ticket</span></h1>
+            <p className="mt-2 text-sm text-neutral-300">Items placed will route immediately to the kitchen display</p>
+          </div>
+        ) : (
+          <div className="relative z-10">
+            <ShoppingBag size={36} className="mx-auto mb-3 text-[#D4A63A]" />
+            <h1 className="font-serif text-4xl font-bold sm:text-5xl">Your <span className="text-[#D4A63A]">Order</span></h1>
+            <p className="mt-2 text-sm text-neutral-400">Authentic Andhra flavours delivered fresh</p>
+          </div>
+        )}
       </section>
 
       <section className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[1.2fr_.8fr] lg:px-8">
         {placed ? (
-          <div className="rounded-2xl border border-[#D4A63A]/30 bg-[#111010] p-10 text-center lg:col-span-2">
-            <CheckCircle2 size={52} className="mx-auto text-[#D4A63A]" />
-            <h2 className="mt-5 font-serif text-3xl font-bold">{isStaff ? 'Order Sent to Kitchen!' : 'Order placed'}</h2>
-            <p className="mt-3 text-neutral-400">
+          <div className="rounded-2xl border border-[#D4A63A]/40 bg-[#111010] p-10 text-center lg:col-span-2 shadow-2xl">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
+              <CheckCircle2 size={40} />
+            </div>
+            <h2 className="mt-5 font-serif text-3xl font-bold">{isStaff ? 'Order Sent to Kitchen!' : 'Order Placed Successfully!'}</h2>
+            <p className="mt-3 text-neutral-300">
               {isStaff 
-                ? `Total ₹${total.toFixed(2)}` 
-                : `Reference: ${placed.id.slice(0, 8).toUpperCase()} · Status: ${placed.status} · Total ₹${placed.total}`
+                ? `Total: ₹${total.toFixed(2)} · Table #${tableId ? tableId.slice(0, 8).toUpperCase() : ''}` 
+                : `Reference: ${placed.id.slice(0, 8).toUpperCase()} · Status: ${placed.status} · Total: ₹${placed.total}`
               }
             </p>
-            {!isStaff && <p className="mt-2 text-sm text-neutral-500">Payment is collected by the restaurant. No online payment was taken.</p>}
+            {!isStaff && <p className="mt-2 text-sm text-neutral-500">Payment will be collected by the restaurant at delivery or dine-in.</p>}
             
-            <Link to={isStaff ? "/waiter" : "/orders"} className="mt-7 inline-flex rounded-lg bg-[#D4A63A] px-5 py-3 font-bold text-black">
-              {isStaff ? "Back to Dashboard" : "View my orders"}
-            </Link>
+            <div className="mt-8 flex flex-wrap justify-center gap-4">
+              <Link to={isStaff ? "/dashboard" : "/orders"} className="rounded-xl bg-[#D4A63A] px-6 py-3 font-bold text-black transition hover:bg-[#E8BD57] shadow-lg shadow-[#D4A63A]/20">
+                {isStaff ? "Back to Dashboard" : "View My Orders"}
+              </Link>
+              <Link to={menuUrl} className="rounded-xl border border-white/20 px-6 py-3 font-semibold text-white transition hover:border-[#D4A63A] hover:text-[#D4A63A]">
+                {isStaff ? "Take Another Order" : "Explore More Dishes"}
+              </Link>
+            </div>
           </div>
         ) : (
           <>
             <section>
-              <h2 className="mb-6 font-serif text-2xl font-bold">Selected <span className="text-[#D4A63A]">items</span></h2>
+              <div className="mb-6 flex items-center justify-between">
+                <h2 className="font-serif text-2xl font-bold">Selected <span className="text-[#D4A63A]">items</span></h2>
+                {cart.length > 0 && (
+                  <Link to={menuUrl} className="text-sm font-semibold text-[#D4A63A] hover:underline">
+                    + Add more dishes
+                  </Link>
+                )}
+              </div>
+
               {cart.length === 0 ? (
-                <div className="rounded-2xl border border-white/10 bg-[#111010] p-10 text-center">
-                  <ShoppingBag size={40} className="mx-auto text-[#D4A63A]" />
+                <div className="rounded-2xl border border-white/10 bg-[#111010] p-12 text-center">
+                  <ShoppingBag size={44} className="mx-auto text-[#D4A63A]" />
                   <h3 className="mt-4 text-xl font-bold">Your cart is empty</h3>
-                  <button onClick={() => navigate(-1)} className="mt-6 inline-flex rounded-lg bg-[#D4A63A] px-6 py-3 font-bold text-black">Back to Menu</button>
+                  <p className="mt-2 text-sm text-neutral-400">Add some delicious biryanis and starters from our menu.</p>
+                  <Link to={menuUrl} className="mt-6 inline-flex rounded-xl bg-[#D4A63A] px-6 py-3 font-bold text-black transition hover:bg-[#E8BD57]">
+                    Browse Menu
+                  </Link>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {cart.map((item) => (
-                    <article key={item.id} className="flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-[#111010] p-4">
-                      <div><h3 className="font-bold">{item.name}</h3><p className="mt-1 text-sm text-[#D4A63A]">₹{item.price} each</p></div>
+                    <article key={item.id} className="flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-[#111010] p-4 transition hover:border-white/20">
+                      <div>
+                        <h3 className="font-bold text-base">{item.name}</h3>
+                        <p className="mt-1 text-sm font-semibold text-[#D4A63A]">₹{item.price} each</p>
+                      </div>
                       <div className="flex items-center gap-3">
-                        <button onClick={() => quantity(item, -1)} aria-label={'Remove one ' + item.name} className="rounded-lg border border-white/15 p-2"><Minus size={15} /></button>
-                        <strong>{item.quantity}</strong>
-                        <button onClick={() => quantity(item, 1)} aria-label={'Add one ' + item.name} className="rounded-lg bg-[#D4A63A] p-2 text-black"><Plus size={15} /></button>
-                        <button onClick={() => quantity(item, -item.quantity)} aria-label={'Remove ' + item.name} className="p-2 text-neutral-500 hover:text-red-300"><Trash2 size={16} /></button>
+                        <button onClick={() => quantity(item, -1)} aria-label={'Remove one ' + item.name} className="rounded-lg border border-white/15 p-2 transition hover:bg-white/10"><Minus size={15} /></button>
+                        <span className="w-6 text-center font-bold text-white">{item.quantity}</span>
+                        <button onClick={() => quantity(item, 1)} aria-label={'Add one ' + item.name} className="rounded-lg bg-[#D4A63A] p-2 text-black transition hover:bg-[#E8BD57]"><Plus size={15} /></button>
+                        <button onClick={() => quantity(item, -item.quantity)} aria-label={'Remove ' + item.name} className="p-2 text-neutral-500 hover:text-red-400 transition"><Trash2 size={16} /></button>
                       </div>
                     </article>
                   ))}
@@ -147,14 +187,32 @@ const submit = async (event) => {
               )}
             </section>
 
-            <aside className="h-fit rounded-2xl border border-[#D4A63A]/20 bg-[#111010] p-5 sm:p-7">
-              <h2 className="font-serif text-2xl font-bold">Checkout</h2>
-              <div className="mt-5 flex justify-between border-b border-white/10 pb-4 text-sm text-neutral-400"><span>Subtotal (before tax)</span><span>₹{total.toFixed(2)}</span></div>
-              {!isStaff && <p className="mb-6 pt-3 text-xs text-neutral-500">Tax is calculated by the server when the order is placed.</p>}
+            <aside className="h-fit rounded-2xl border border-[#D4A63A]/30 bg-[#111010] p-6 sm:p-7 shadow-xl">
+              <h2 className="font-serif text-2xl font-bold">{isStaff ? 'Ticket Summary' : 'Checkout'}</h2>
+
+              {isStaff && tableId && (
+                <div className="mt-4 rounded-xl border border-[#D4A63A]/20 bg-[#D4A63A]/5 p-3 text-xs text-neutral-300 space-y-1">
+                  <p className="font-bold text-[#D4A63A] uppercase tracking-wide">Dine-In Order</p>
+                  <p>Table: <span className="font-mono font-bold text-white">#{tableId.slice(0, 8).toUpperCase()}</span></p>
+                </div>
+              )}
+
+              <div className="mt-5 space-y-2.5 border-b border-white/10 pb-4 text-sm text-neutral-300">
+                <div className="flex justify-between">
+                  <span>Items count</span>
+                  <span className="font-semibold text-white">{cart.reduce((s, x) => s + x.quantity, 0)} items</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Subtotal</span>
+                  <span className="font-bold text-white">₹{total.toFixed(2)}</span>
+                </div>
+              </div>
               
-              {error && <p role="alert" className="mb-4 rounded-lg bg-red-500/10 p-3 text-sm text-red-300">{error}</p>}
+              {!isStaff && <p className="mb-4 pt-3 text-xs text-neutral-400">Applicable taxes and service charges are calculated on placement.</p>}
               
-              <form onSubmit={submit} className="space-y-4 pt-3">
+              {error && <p role="alert" className="my-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">{error}</p>}
+              
+              <form onSubmit={submit} className="space-y-4 pt-2">
                 {!isStaff && (
                   <label className="block text-sm font-semibold text-neutral-300">Branch
                     <select className={field + ' mt-2'} value={branchId} onChange={(e) => setBranchId(e.target.value)} required>
@@ -164,8 +222,8 @@ const submit = async (event) => {
                   </label>
                 )}
 
-                <button disabled={!cart.length || busy} className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#D4A63A] px-5 py-4 font-bold text-black hover:bg-[#E8BD57] disabled:opacity-40">
-                  {busy ? 'Processing…' : (isStaff ? 'Send to Kitchen' : 'Place order')} <ArrowRight size={18} />
+                <button disabled={!cart.length || busy} className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#D4A63A] px-5 py-4 font-bold text-black hover:bg-[#E8BD57] active:scale-[0.98] transition-all disabled:opacity-40 shadow-lg shadow-[#D4A63A]/20">
+                  {busy ? 'Processing…' : (isStaff ? 'Send to Kitchen' : 'Place Order')} <ArrowRight size={18} />
                 </button>
               </form>
             </aside>

@@ -12,6 +12,13 @@ export const getCart = () => {
 
 export const saveCart = (cart) => {
   localStorage.setItem(CART_KEY, JSON.stringify(cart))
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('cart-updated', { detail: cart }))
+  }
+}
+
+export const clearCart = () => {
+  saveCart([])
 }
 
 export const addToCart = (product) => {
