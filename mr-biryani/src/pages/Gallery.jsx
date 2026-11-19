@@ -18,7 +18,7 @@ const photos = [
     id: 1,
     title: 'Hyderabadi Dum Biryani',
     category: 'Food',
-    image: 'https://images.unsplash.com/photo-1563379091339-03246963d96c?auto=format&fit=crop&w=1200&q=85', 
+    image: 'https://images.unsplash.com/photo-1589302168068-964664d93dc0?auto=format&fit=crop&w=1200&q=80', 
   },
   {
     id: 2,

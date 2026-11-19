@@ -179,22 +179,24 @@ public class OrderService {
         branches.requireActive(branchId);
         validateLines(lines);
 
-        // Verify that the table belongs to the requested branch.
-        boolean tableBelongsToBranch = jdbc.sql(
-                        "SELECT EXISTS ("
-                                + "SELECT 1 FROM dining_tables "
-                                + "WHERE id = :tableId AND branch_id = :branchId"
-                                + ")"
-                )
-                .param("tableId", tableId)
-                .param("branchId", branchId)
-                .query(Boolean.class)
-                .single();
+        // Verify that the table belongs to the requested branch if specified.
+        if (tableId != null) {
+            boolean tableBelongsToBranch = jdbc.sql(
+                            "SELECT EXISTS ("
+                                    + "SELECT 1 FROM dining_tables "
+                                    + "WHERE id = :tableId AND branch_id = :branchId"
+                                    + ")"
+                    )
+                    .param("tableId", tableId)
+                    .param("branchId", branchId)
+                    .query(Boolean.class)
+                    .single();
 
-        if (!tableBelongsToBranch) {
-            throw ApiException.badRequest(
-                    "The specified table does not belong to this branch"
-            );
+            if (!tableBelongsToBranch) {
+                throw ApiException.badRequest(
+                        "The specified table does not belong to this branch"
+                );
+            }
         }
 
         String requestFingerprint = fingerprint(

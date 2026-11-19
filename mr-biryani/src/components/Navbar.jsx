@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
-import { Menu as MenuIcon, X, ShoppingBag, UserRound, LogOut } from 'lucide-react'
+import { Menu as MenuIcon, X, ShoppingBag, UserRound, LogOut, ShoppingCart } from 'lucide-react'
 import Brand from './Brand'
-import Button from './Button'
 import { useAuth } from '../auth/AuthContext'
 import { getCart } from '../utils/cart'
 
@@ -70,7 +69,13 @@ function Navbar() {
           </Link>
           {isStaff && <span className="text-xs font-semibold uppercase tracking-wider text-[#D4A63A]">Staff</span>}
           {accountLinks}
-          <Button to="/menu" variant="spice" size="sm">Order Now</Button>
+          <Link
+            to="/menu"
+            className="flex items-center gap-1.5 rounded-xl border border-[#D4A63A]/40 bg-gradient-to-r from-[#E0B246] to-[#C39327] px-4 py-2 text-xs font-bold uppercase tracking-wider text-black shadow-md shadow-[#D4A63A]/20 transition-all hover:brightness-110 hover:shadow-lg hover:shadow-[#D4A63A]/30 active:scale-95"
+          >
+            <ShoppingCart size={15} className="stroke-[2.5]" />
+            <span>Order Now</span>
+          </Link>
         </div>
         <button onClick={() => setOpen((v) => !v)} className="rounded-lg border border-[#D4A63A]/40 p-2 text-[#D4A63A] lg:hidden" aria-label={open ? 'Close menu' : 'Open menu'} aria-expanded={open}>
           {open ? <X size={24} /> : <MenuIcon size={24} />}
@@ -92,7 +97,14 @@ function Navbar() {
             ) : (
               <Link to="/login" onClick={() => setOpen(false)} className="px-4 py-3 text-sm text-neutral-300">Login / Register</Link>
             )}
-            <Button to="/menu" variant="spice" fullWidth onClick={() => setOpen(false)}>Order Now</Button>
+            <Link
+              to="/menu"
+              onClick={() => setOpen(false)}
+              className="flex items-center justify-center gap-2 rounded-xl border border-[#D4A63A]/40 bg-gradient-to-r from-[#E0B246] to-[#C39327] py-3 text-sm font-bold uppercase tracking-wider text-black shadow-lg shadow-[#D4A63A]/25 transition hover:brightness-110 active:scale-95"
+            >
+              <ShoppingCart size={17} className="stroke-[2.5]" />
+              <span>Order Now</span>
+            </Link>
           </div>
         </div>
       </div>

@@ -7,6 +7,10 @@ import { api, ApiError, newIdempotencyKey } from '../api/client'
 
 const field = 'w-full rounded-xl border border-white/10 bg-[#080808] px-4 py-3 text-white outline-none focus:border-[#D4A63A]'
 
+const DEFAULT_BRANCHES = [
+  { id: '86841c23-a243-4282-bb0d-65415b68ae36', code: 'MAIN', name: 'Mr. Biryani - BTM 1st Stage (Main)' }
+]
+
 function Order() {
   const navigate = useNavigate()
   
@@ -16,8 +20,8 @@ function Order() {
 
   const { status, hasPermission } = useAuth()
   const [cart, setCart] = useState(() => getCart())
-  const [branches, setBranches] = useState([])
-  const [branchId, setBranchId] = useState(urlBranchId || '') 
+  const [branches, setBranches] = useState(DEFAULT_BRANCHES)
+  const [branchId, setBranchId] = useState(urlBranchId || DEFAULT_BRANCHES[0].id) 
   const [error, setError] = useState('')
   const [placed, setPlaced] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -28,9 +32,13 @@ function Order() {
 
   useEffect(() => {
     api.get('/api/v1/branches').then((list) => {
-      setBranches(list)
-      if (list.length === 1 && !urlBranchId) setBranchId(list[0].id)
-    }).catch(() => setError('Could not load branches. Please refresh the page.'))
+      if (Array.isArray(list) && list.length > 0) {
+        setBranches(list)
+        if (!urlBranchId) setBranchId(list[0].id)
+      }
+    }).catch((err) => {
+      console.warn('Could not load branches from server, using default:', err)
+    })
   }, [urlBranchId])
 
   const total = useMemo(() => cart.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0), [cart])

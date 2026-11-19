@@ -71,7 +71,7 @@ public final class Permissions {
                 "kitchen.orders.read", "kitchen.orders.coordinate", "service.status.read", "service.status.update",
                 "inventory.read")));
         m.put(Role.CASHIER, union(staffBase, Set.of(
-                "orders.read", "tables.read", "reservations.read", "service.status.read",
+                "orders.create", "orders.read", "tables.read", "reservations.read", "service.status.read",
                 "billing.generate", "billing.read", "billing.split", "billing.reprint",
                 "payments.collect", "payments.read", "payments.refund", "discounts.apply")));
         // Manager: operational scope. No administration keys, no customer self-service keys,

@@ -16,7 +16,7 @@ const variants = {
     'bg-gradient-to-r from-[#D4A63A] via-[#E8BD57] to-[#D4A63A] bg-[length:200%_auto] text-black hover:bg-right hover:shadow-lg hover:shadow-[#D4A63A]/30',
 
   spice:
-    'bg-gradient-to-r from-orange-500 via-red-500 to-fuchsia-600 bg-[length:200%_auto] text-white hover:bg-right hover:shadow-lg hover:shadow-red-500/30',
+    'bg-gradient-to-r from-[#D4A63A] via-[#E8BD57] to-[#C39327] bg-[length:200%_auto] text-black font-bold hover:bg-right hover:shadow-lg hover:shadow-[#D4A63A]/30',
 
   outline:
     'border border-white/30 bg-[#080808]/60 text-white backdrop-blur hover:border-[#D4A63A] hover:text-[#D4A63A]',

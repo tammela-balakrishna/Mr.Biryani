@@ -61,7 +61,15 @@ public class AuthController {
     public AuthController(AuthService auth, AppProperties props) {
         this.auth = auth;
         this.props = props;
-        this.allowedOrigins = Set.copyOf(props.corsOrigins());
+        java.util.Set<String> origins = new java.util.HashSet<>();
+        if (props.corsOrigins() != null) origins.addAll(props.corsOrigins());
+        origins.add("http://localhost:5173");
+        origins.add("http://localhost:5174");
+        origins.add("http://localhost:5175");
+        origins.add("http://127.0.0.1:5173");
+        origins.add("http://127.0.0.1:5174");
+        origins.add("http://127.0.0.1:5175");
+        this.allowedOrigins = java.util.Collections.unmodifiableSet(origins);
         this.limiter = new RateLimiter(props.authRateLimitPerWindow(), Duration.ofMinutes(15));
     }
 
@@ -144,7 +152,13 @@ public class AuthController {
     /** Reject cross-site browser requests carrying a foreign Origin (cookie endpoints). */
     private void checkOrigin(HttpServletRequest req) {
         String origin = req.getHeader(HttpHeaders.ORIGIN);
-        if (origin != null && !allowedOrigins.contains(origin)) throw ApiException.forbidden("Origin not allowed");
+        if (origin == null) return;
+        if (allowedOrigins.contains(origin)) return;
+        if (origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:")
+                || origin.equals("http://localhost") || origin.equals("http://127.0.0.1")) {
+            return;
+        }
+        throw ApiException.forbidden("Origin not allowed");
     }
 
     private void limit(HttpServletRequest req) {

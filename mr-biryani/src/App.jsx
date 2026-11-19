@@ -6,8 +6,6 @@ import ScrollToTop from './components/ScrollToTop'
 import ProtectedRoute from './components/ProtectedRoute'
 import { useAuth } from './auth/AuthContext'
 import Home from './pages/Home'
-import Menu from './pages/Menu'
-import About from './pages/About'
 import Gallery from './pages/Gallery'
 import Order from './pages/Order'
 import Login from './pages/Login'
@@ -55,8 +53,8 @@ function App() {
         <div key={location.pathname} className="flex-1">
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/menu" element={<Menu />} />
-            <Route path="/about" element={<About />} />
+            <Route path="/menu" element={<Home initialSection="menu" />} />
+            <Route path="/about" element={<Home initialSection="about" />} />
             <Route path="/gallery" element={<Gallery />} />
             <Route path="/order" element={<Order />} />
             <Route path="/login" element={<Login />} />

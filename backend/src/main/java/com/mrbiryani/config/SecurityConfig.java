@@ -39,17 +39,19 @@ public class SecurityConfig {
             .formLogin(f -> f.disable())
             .logout(l -> l.disable())
             .authorizeHttpRequests(a -> a
+                .requestMatchers(org.springframework.web.cors.CorsUtils::isPreFlightRequest).permitAll()
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/ws", "/ws/**").permitAll()
                 .requestMatchers("/api/v1/chat/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/branches").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/branches", "/api/v1/branches/").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/payments/webhooks/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/enquiries", "/api/v1/reviews").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/reviews").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login",
                         "/api/v1/auth/refresh", "/api/v1/auth/logout").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/menu/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/menu", "/api/v1/menu/**").permitAll()
                 .anyRequest().authenticated())
             .exceptionHandling(e -> e.authenticationEntryPoint((req, res, ex) -> {
                 res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -68,11 +70,21 @@ public class SecurityConfig {
 
     private static CorsConfigurationSource corsSource(AppProperties props) {
         CorsConfiguration c = new CorsConfiguration();
-        c.setAllowedOrigins(props.corsOrigins());
-        c.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        c.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Request-Id", "Idempotency-Key"));
-        c.setExposedHeaders(List.of("X-Request-Id"));
+        List<String> patterns = new java.util.ArrayList<>();
+        if (props.corsOrigins() != null) {
+            patterns.addAll(props.corsOrigins());
+        }
+        if (!patterns.contains("http://localhost:5173")) patterns.add("http://localhost:5173");
+        if (!patterns.contains("http://localhost:5174")) patterns.add("http://localhost:5174");
+        if (!patterns.contains("http://localhost:5175")) patterns.add("http://localhost:5175");
+        patterns.add("http://localhost:*");
+        patterns.add("http://127.0.0.1:*");
+        c.setAllowedOriginPatterns(patterns);
+        c.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"));
+        c.setAllowedHeaders(List.of("*"));
+        c.setExposedHeaders(List.of("X-Request-Id", "Authorization", "Set-Cookie"));
         c.setAllowCredentials(true);
+        c.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource src = new UrlBasedCorsConfigurationSource();
         src.registerCorsConfiguration("/**", c);
         return src;

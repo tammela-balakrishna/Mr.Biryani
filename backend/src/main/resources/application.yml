@@ -35,7 +35,7 @@ app:
     audience: ${JWT_AUDIENCE:mr-biryani-clients}
     access-token-ttl: ${ACCESS_TOKEN_TTL:15m}
   refresh-token-ttl: ${REFRESH_TOKEN_TTL:14d}
-  cors-origins: ${CORS_ORIGINS:http://localhost:5173}
+  cors-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:5176,http://127.0.0.1:5173,http://127.0.0.1:5174,http://127.0.0.1:5175,http://127.0.0.1:5176}
   cookie-secure: ${COOKIE_SECURE:false}
   auth-rate-limit-per-window: ${AUTH_RATE_LIMIT:20}
   seed:

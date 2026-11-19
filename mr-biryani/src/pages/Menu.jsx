@@ -8,7 +8,7 @@ import { MotionStyles, Reveal, SafeImg } from '../components/Motion'
 
 const base = 'https://images.unsplash.com'
 const images = {
-  biryani: `${base}/photo-1563379091339-03246963d96c?auto=format&fit=crop&w=700&q=85`,
+  biryani: `${base}/photo-1633945274405-b6c8069047b0?auto=format&fit=crop&w=700&q=80`,
   family: `${base}/photo-1589302168068-964664d93dc0?auto=format&fit=crop&w=700&q=85`,
   starters: `${base}/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=700&q=85`,
   background: `${base}/photo-1552566626-52f8b828add9?auto=format&fit=crop&w=1920&q=80`,

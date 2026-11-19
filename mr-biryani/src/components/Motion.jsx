@@ -29,7 +29,7 @@ export function useReveal(threshold = 0.15) {
 
     observer.observe(element)
     return () => observer.disconnect()
-  }, [threshold])
+  }, [threshold, shown])
 
   return [ref, shown]
 }

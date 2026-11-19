@@ -7,11 +7,15 @@ import { api, ApiError } from '../api/client'
 const field = 'w-full rounded-xl border border-white/10 bg-[#080808] px-4 py-3 text-white outline-none transition focus:border-[#D4A63A]'
 const STATUS_LABEL = { REQUESTED: 'Requested', CONFIRMED: 'Confirmed', CHECKED_IN: 'Checked in', CANCELLED: 'Cancelled' }
 
+const DEFAULT_BRANCHES = [
+  { id: '86841c23-a243-4282-bb0d-65415b68ae36', code: 'MAIN', name: 'Mr. Biryani - BTM 1st Stage (Main)' }
+]
+
 function ReservationsContent() {
   const { user } = useAuth()
-  const [branches, setBranches] = useState([])
+  const [branches, setBranches] = useState(DEFAULT_BRANCHES)
   const [mine, setMine] = useState([])
-  const [form, setForm] = useState({ branchId: '', date: '', time: '19:00', guests: '2', notes: '' })
+  const [form, setForm] = useState({ branchId: DEFAULT_BRANCHES[0].id, date: '', time: '19:00', guests: '2', notes: '' })
   const [saved, setSaved] = useState(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -22,9 +26,13 @@ function ReservationsContent() {
 
   useEffect(() => {
     api.get('/api/v1/branches').then((list) => {
-      setBranches(list)
-      if (list.length === 1) setForm((f) => ({ ...f, branchId: list[0].id }))
-    }).catch(() => setError('Could not load branches.'))
+      if (Array.isArray(list) && list.length > 0) {
+        setBranches(list)
+        setForm((f) => ({ ...f, branchId: f.branchId || list[0].id }))
+      }
+    }).catch((err) => {
+      console.warn('Could not load branches, using default:', err)
+    })
     reload()
   }, [])
 

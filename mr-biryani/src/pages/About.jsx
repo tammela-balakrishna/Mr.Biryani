@@ -11,7 +11,7 @@ import { MotionStyles, Reveal, SafeImg } from '../components/Motion'
 const base = 'https://images.unsplash.com'
 const photos = {
   hero: `${base}/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1800&q=85`,
-  main: `${base}/photo-1563379091339-03246963d96c?auto=format&fit=crop&w=1200&q=85`,
+  main: `${base}/photo-1589302168068-964664d93dc0?auto=format&fit=crop&w=1200&q=80`,
   // Added a public background image for the page
   background: `${base}/photo-1552566626-52f8b828add9?auto=format&fit=crop&w=1920&q=80`,
 }

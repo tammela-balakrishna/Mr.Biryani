@@ -23,7 +23,13 @@ public class RealtimeConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws").setAllowedOriginPatterns(props.corsOrigins().toArray(String[]::new));
+        java.util.List<String> patterns = new java.util.ArrayList<>();
+        if (props.corsOrigins() != null) {
+            patterns.addAll(props.corsOrigins());
+        }
+        patterns.add("http://localhost:*");
+        patterns.add("http://127.0.0.1:*");
+        registry.addEndpoint("/ws").setAllowedOriginPatterns(patterns.toArray(String[]::new));
     }
 
     @Override

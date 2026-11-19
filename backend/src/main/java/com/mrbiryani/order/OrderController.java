@@ -46,7 +46,7 @@ public class OrderController {
     ) {}
 
     public record StaffPlaceOrderRequest(
-            @NotNull UUID tableId,
+            UUID tableId,
             @NotEmpty List<@NotNull @Valid LineRequest> items
     ) {}
 

@@ -154,3 +154,48 @@ a {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ==============================
+   THERMAL RECEIPT PRINTING (80mm)
+   Ensures ONLY the receipt is printed
+============================== */
+
+@media print {
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Hide entire page, navbar, sidebars, buttons */
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* Make ONLY thermal receipt and its contents visible */
+  #thermal-receipt,
+  #thermal-receipt * {
+    visibility: visible !important;
+  }
+
+  /* Anchor receipt at 0,0 for standard thermal roll */
+  #thermal-receipt {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 80mm !important;
+    max-width: 80mm !important;
+    margin: 0 !important;
+    padding: 4mm !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+}
