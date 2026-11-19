@@ -20,9 +20,13 @@ DO $$
 BEGIN
     IF NOT EXISTS (
         SELECT 1
-        FROM pg_constraint
-        WHERE conname = 'orders_table_id_fk'
-          AND conrelid = 'orders'::regclass
+        FROM pg_constraint c
+        JOIN pg_attribute a
+          ON a.attrelid = c.conrelid
+         AND a.attnum = ANY (c.conkey)
+        WHERE c.conrelid = 'orders'::regclass
+          AND c.contype = 'f'
+          AND a.attname = 'table_id'
     ) THEN
         ALTER TABLE orders
             ADD CONSTRAINT orders_table_id_fk
@@ -31,9 +35,13 @@ BEGIN
 
     IF NOT EXISTS (
         SELECT 1
-        FROM pg_constraint
-        WHERE conname = 'orders_created_by_fk'
-          AND conrelid = 'orders'::regclass
+        FROM pg_constraint c
+        JOIN pg_attribute a
+          ON a.attrelid = c.conrelid
+         AND a.attnum = ANY (c.conkey)
+        WHERE c.conrelid = 'orders'::regclass
+          AND c.contype = 'f'
+          AND a.attname = 'created_by'
     ) THEN
         ALTER TABLE orders
             ADD CONSTRAINT orders_created_by_fk
