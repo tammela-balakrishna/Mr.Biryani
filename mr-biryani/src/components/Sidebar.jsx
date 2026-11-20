@@ -63,6 +63,10 @@ export default function Sidebar() {
 
   const userInitial = (user?.fullName || 'U').charAt(0).toUpperCase()
 
+  const canReserve = hasPermission('reservations.manage_own') || hasPermission('reservations.create')
+  const canOrder = hasPermission('orders.create_own') || hasPermission('orders.create')
+  const canViewOrders = (hasPermission('orders.read_own') || hasPermission('orders.read')) && canOrder
+
   const navSectionClass = 'text-[11px] font-bold uppercase tracking-[1.5px] text-neutral-400 px-3 mb-2'
   const navItemClass = ({ isActive }) =>
     `flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
@@ -105,24 +109,28 @@ export default function Sidebar() {
               </span>
             </NavLink>
 
-            <NavLink to="/order" className={navItemClass}>
-              <span className="flex items-center gap-3">
-                <ShoppingBag size={18} />
-                <span>Cart / Order</span>
-              </span>
-              {cartCount > 0 && (
-                <span className="rounded-full bg-black/80 px-2 py-0.5 text-xs font-bold text-[#D4A63A]">
-                  {cartCount}
+            {canOrder && (
+              <NavLink to="/order" className={navItemClass}>
+                <span className="flex items-center gap-3">
+                  <ShoppingBag size={18} />
+                  <span>Cart / Order</span>
                 </span>
-              )}
-            </NavLink>
+                {cartCount > 0 && (
+                  <span className="rounded-full bg-black/80 px-2 py-0.5 text-xs font-bold text-[#D4A63A]">
+                    {cartCount}
+                  </span>
+                )}
+              </NavLink>
+            )}
 
-            <NavLink to="/reservations" className={navItemClass}>
-              <span className="flex items-center gap-3">
-                <CalendarDays size={18} />
-                <span>Reservations</span>
-              </span>
-            </NavLink>
+            {canReserve && (
+              <NavLink to="/reservations" className={navItemClass}>
+                <span className="flex items-center gap-3">
+                  <CalendarDays size={18} />
+                  <span>Reservations</span>
+                </span>
+              </NavLink>
+            )}
           </nav>
         </div>
 
@@ -137,19 +145,23 @@ export default function Sidebar() {
               </span>
             </NavLink>
 
-            <NavLink to="/orders" className={navItemClass}>
-              <span className="flex items-center gap-3">
-                <ClipboardList size={18} />
-                <span>Order History</span>
-              </span>
-            </NavLink>
+            {canViewOrders && (
+              <NavLink to="/orders" className={navItemClass}>
+                <span className="flex items-center gap-3">
+                  <ClipboardList size={18} />
+                  <span>Order History</span>
+                </span>
+              </NavLink>
+            )}
 
-            <NavLink to="/reviews" className={navItemClass}>
-              <span className="flex items-center gap-3">
-                <Star size={18} />
-                <span>Reviews</span>
-              </span>
-            </NavLink>
+            {!isStaff && (
+              <NavLink to="/reviews" className={navItemClass}>
+                <span className="flex items-center gap-3">
+                  <Star size={18} />
+                  <span>Reviews</span>
+                </span>
+              </NavLink>
+            )}
           </nav>
         </div>
 
@@ -257,18 +269,20 @@ export default function Sidebar() {
         <Brand to="/" compact showText tone="dark" />
 
         <div className="flex items-center gap-2">
-          <Link
-            to="/order"
-            className="relative p-2 text-neutral-300 hover:text-[#D4A63A]"
-            aria-label="Cart"
-          >
-            <ShoppingBag size={21} />
-            {cartCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#D4A63A] px-1 text-[10px] font-bold text-black">
-                {cartCount}
-              </span>
-            )}
-          </Link>
+          {canOrder && (
+            <Link
+              to="/order"
+              className="relative p-2 text-neutral-300 hover:text-[#D4A63A]"
+              aria-label="Cart"
+            >
+              <ShoppingBag size={21} />
+              {cartCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#D4A63A] px-1 text-[10px] font-bold text-black">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+          )}
 
           <Link
             to="/profile"

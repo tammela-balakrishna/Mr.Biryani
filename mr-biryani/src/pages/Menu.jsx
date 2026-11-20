@@ -5,6 +5,7 @@ import { addToCart, getCart } from '../utils/cart'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { MotionStyles, Reveal, SafeImg } from '../components/Motion'
+import { DEFAULT_MENU } from '../data/menuData'
 
 const base = 'https://images.unsplash.com'
 const images = {
@@ -17,8 +18,8 @@ const images = {
 const imageFor = (name) => (/family/i.test(name) ? images.family : /starter/i.test(name) ? images.starters : images.biryani)
 
 function Menu() {
-  const [activeCategory, setActiveCategory] = useState('')
-  const [menu, setMenu] = useState([])
+  const [menu, setMenu] = useState(DEFAULT_MENU)
+  const [activeCategory, setActiveCategory] = useState(DEFAULT_MENU[0].name)
   const [loadError, setLoadError] = useState('')
   const [cart, setCart] = useState(() => getCart())
   const [recentlyAddedId, setRecentlyAddedId] = useState(null)
@@ -32,10 +33,18 @@ function Menu() {
   useEffect(() => {
     api.get('/api/v1/menu')
       .then((data) => {
-        setMenu(data.categories)
-        setActiveCategory(data.categories[0]?.name || '')
+        if (data?.categories?.length > 0) {
+          setMenu(data.categories)
+          setActiveCategory((curr) => {
+            const exists = data.categories.some((c) => c.name === curr)
+            return exists ? curr : data.categories[0].name
+          })
+          setLoadError('')
+        }
       })
-      .catch(() => setLoadError('Could not load the menu. Please try again shortly.'))
+      .catch((err) => {
+        console.warn('Menu live sync notice:', err)
+      })
   }, [])
 
   useEffect(() => {

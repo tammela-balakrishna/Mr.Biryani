@@ -10,7 +10,7 @@ public enum OrderStatus {
             PLACED, EnumSet.of(ACCEPTED, CANCELLED),
             ACCEPTED, EnumSet.of(PREPARING, CANCELLED),
             PREPARING, EnumSet.of(READY),
-            READY, EnumSet.of(SERVED),
+            READY, EnumSet.of(SERVED, COMPLETED),
             SERVED, EnumSet.of(COMPLETED),
             COMPLETED, EnumSet.noneOf(OrderStatus.class),
             CANCELLED, EnumSet.noneOf(OrderStatus.class));

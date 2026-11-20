@@ -202,14 +202,14 @@ public class OrderRepository {
                 .optional();
     }
 
-    public List<OrderRow> listForCustomer(UUID customerId) {
+    public List<OrderRow> listForCustomer(UUID userId) {
         return jdbc.sql(
                         "SELECT " + ORDER_COLS
                                 + " FROM orders "
-                                + "WHERE customer_id = :customer "
+                                + "WHERE customer_id = :user OR created_by = :user "
                                 + "ORDER BY created_at DESC LIMIT 100"
                 )
-                .param("customer", customerId)
+                .param("user", userId)
                 .query(OrderRepository::mapOrder)
                 .list();
     }

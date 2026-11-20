@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { 
   UserRound, 
@@ -37,8 +37,12 @@ const STATUS_COLORS = {
 }
 
 function ProfileContent() {
-  const { user, roles, isStaff, logout } = useAuth()
+  const { user, roles, isStaff, logout, hasPermission } = useAuth()
   const navigate = useNavigate()
+
+  const canReserve = hasPermission('reservations.manage_own') || hasPermission('reservations.create')
+  const canViewOrders = hasPermission('orders.read_own') || hasPermission('orders.read')
+  const canOrder = hasPermission('orders.create_own') || hasPermission('orders.create')
 
   const [activeTab, setActiveTab] = useState('overview')
   const [orders, setOrders] = useState([])
@@ -48,14 +52,18 @@ function ProfileContent() {
   const [actionSuccess, setActionSuccess] = useState('')
   const [cancellingId, setCancellingId] = useState(null)
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
-      const [orderList, resList] = await Promise.all([
-        api.get('/api/v1/orders').catch(() => []),
-        api.get('/api/v1/reservations/mine').catch(() => []),
-      ])
+      const calls = []
+      if (canViewOrders) calls.push(api.get('/api/v1/orders').catch(() => []))
+      else calls.push(Promise.resolve([]))
+
+      if (canReserve) calls.push(api.get('/api/v1/reservations/mine').catch(() => []))
+      else calls.push(Promise.resolve([]))
+
+      const [orderList, resList] = await Promise.all(calls)
       setOrders(Array.isArray(orderList) ? orderList : [])
       setReservations(Array.isArray(resList) ? resList : [])
     } catch {
@@ -63,12 +71,12 @@ function ProfileContent() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [canViewOrders, canReserve])
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData()
-  }, [])
+  }, [loadData])
 
   // Order stats
   const totalSpent = useMemo(
@@ -118,6 +126,20 @@ function ProfileContent() {
   const roleDisplay = roles.includes('CUSTOMER')
     ? 'Customer'
     : roles.map((r) => r.charAt(0) + r.slice(1).toLowerCase()).join(', ')
+
+  const profileTabs = useMemo(() => {
+    const list = [['overview', 'Overview & Highlights', UserRound]]
+    if (canViewOrders) {
+      list.push(['orders', `Order History (${orders.length})`, ClipboardList])
+    }
+    if (canReserve) {
+      list.push(['reservations', `Table Bookings (${reservations.length})`, CalendarDays])
+    }
+    list.push(['actions', 'Account & Quick Actions', Sparkles])
+    return list
+  }, [canViewOrders, canReserve, orders.length, reservations.length])
+
+  const effectiveTab = profileTabs.some(([id]) => id === activeTab) ? activeTab : 'overview'
 
   return (
     <main className="min-h-screen bg-[#080808] px-4 py-8 text-white sm:px-6 lg:px-8">
@@ -221,13 +243,8 @@ function ProfileContent() {
 
         {/* Tab Navigation */}
         <div className="flex border-b border-white/10 gap-2 sm:gap-4 overflow-x-auto pb-1">
-          {[
-            ['overview', 'Overview & Highlights', UserRound],
-            ['orders', `Order History (${orders.length})`, ClipboardList],
-            ['reservations', `Table Bookings (${reservations.length})`, CalendarDays],
-            ['actions', 'Account & Quick Actions', Sparkles],
-          ].map(([id, label, Icon]) => {
-            const isActive = activeTab === id
+          {profileTabs.map(([id, label, Icon]) => {
+            const isActive = effectiveTab === id
             return (
               <button
                 key={id}
@@ -246,7 +263,7 @@ function ProfileContent() {
         </div>
 
         {/* TAB 1: OVERVIEW */}
-        {activeTab === 'overview' && (
+        {effectiveTab === 'overview' && (
           <div className="space-y-8">
             {/* Active Orders Tracker */}
             {activeOrders.length > 0 && (
@@ -298,54 +315,74 @@ function ProfileContent() {
             )}
 
             {/* Quick Actions Grid */}
-            <section className="grid gap-4 sm:grid-cols-3">
-              <Link
-                to="/menu"
-                className="group rounded-2xl border border-white/10 bg-[#111010] p-6 transition-all hover:border-[#D4A63A]/40 hover:-translate-y-1 shadow-lg"
-              >
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#D4A63A]/10 text-[#D4A63A] group-hover:bg-[#D4A63A] group-hover:text-black transition-colors">
-                  <UtensilsCrossed size={24} />
-                </div>
-                <h3 className="mt-4 font-serif text-lg font-bold text-white">Order Andhra Biryani</h3>
-                <p className="mt-1 text-xs text-neutral-400">Fresh dum biryanis, spicy Andhra starters and desserts.</p>
-                <span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-[#D4A63A]">
-                  Explore Menu →
-                </span>
-              </Link>
+            <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {(canOrder || !user) && (
+                <Link
+                  to="/menu"
+                  className="group rounded-2xl border border-white/10 bg-[#111010] p-6 transition-all hover:border-[#D4A63A]/40 hover:-translate-y-1 shadow-lg"
+                >
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#D4A63A]/10 text-[#D4A63A] group-hover:bg-[#D4A63A] group-hover:text-black transition-colors">
+                    <UtensilsCrossed size={24} />
+                  </div>
+                  <h3 className="mt-4 font-serif text-lg font-bold text-white">Order Andhra Biryani</h3>
+                  <p className="mt-1 text-xs text-neutral-400">Fresh dum biryanis, spicy Andhra starters and desserts.</p>
+                  <span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-[#D4A63A]">
+                    Explore Menu →
+                  </span>
+                </Link>
+              )}
 
-              <Link
-                to="/reservations"
-                className="group rounded-2xl border border-white/10 bg-[#111010] p-6 transition-all hover:border-[#D4A63A]/40 hover:-translate-y-1 shadow-lg"
-              >
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#D4A63A]/10 text-[#D4A63A] group-hover:bg-[#D4A63A] group-hover:text-black transition-colors">
-                  <CalendarDays size={24} />
-                </div>
-                <h3 className="mt-4 font-serif text-lg font-bold text-white">Book a Dining Table</h3>
-                <p className="mt-1 text-xs text-neutral-400">Reserve a table for your family, party, or business lunch.</p>
-                <span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-[#D4A63A]">
-                  Reserve Now →
-                </span>
-              </Link>
+              {canReserve && (
+                <Link
+                  to="/reservations"
+                  className="group rounded-2xl border border-white/10 bg-[#111010] p-6 transition-all hover:border-[#D4A63A]/40 hover:-translate-y-1 shadow-lg"
+                >
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#D4A63A]/10 text-[#D4A63A] group-hover:bg-[#D4A63A] group-hover:text-black transition-colors">
+                    <CalendarDays size={24} />
+                  </div>
+                  <h3 className="mt-4 font-serif text-lg font-bold text-white">Book a Dining Table</h3>
+                  <p className="mt-1 text-xs text-neutral-400">Reserve a table for your family, party, or business lunch.</p>
+                  <span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-[#D4A63A]">
+                    Reserve Now →
+                  </span>
+                </Link>
+              )}
 
-              <Link
-                to="/reviews"
-                className="group rounded-2xl border border-white/10 bg-[#111010] p-6 transition-all hover:border-[#D4A63A]/40 hover:-translate-y-1 shadow-lg"
-              >
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#D4A63A]/10 text-[#D4A63A] group-hover:bg-[#D4A63A] group-hover:text-black transition-colors">
-                  <Sparkles size={24} />
-                </div>
-                <h3 className="mt-4 font-serif text-lg font-bold text-white">Share Your Review</h3>
-                <p className="mt-1 text-xs text-neutral-400">Tell us about your experience and Andhra spice journey.</p>
-                <span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-[#D4A63A]">
-                  Write Review →
-                </span>
-              </Link>
+              {isStaff ? (
+                <Link
+                  to="/dashboard"
+                  className="group rounded-2xl border border-white/10 bg-[#111010] p-6 transition-all hover:border-[#D4A63A]/40 hover:-translate-y-1 shadow-lg"
+                >
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#D4A63A]/10 text-[#D4A63A] group-hover:bg-[#D4A63A] group-hover:text-black transition-colors">
+                    <ShieldCheck size={24} />
+                  </div>
+                  <h3 className="mt-4 font-serif text-lg font-bold text-white">Staff Workspace</h3>
+                  <p className="mt-1 text-xs text-neutral-400">Open your role dashboard to manage operations and services.</p>
+                  <span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-[#D4A63A]">
+                    Open Dashboard →
+                  </span>
+                </Link>
+              ) : (
+                <Link
+                  to="/reviews"
+                  className="group rounded-2xl border border-white/10 bg-[#111010] p-6 transition-all hover:border-[#D4A63A]/40 hover:-translate-y-1 shadow-lg"
+                >
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#D4A63A]/10 text-[#D4A63A] group-hover:bg-[#D4A63A] group-hover:text-black transition-colors">
+                    <Sparkles size={24} />
+                  </div>
+                  <h3 className="mt-4 font-serif text-lg font-bold text-white">Share Your Review</h3>
+                  <p className="mt-1 text-xs text-neutral-400">Tell us about your experience and Andhra spice journey.</p>
+                  <span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-[#D4A63A]">
+                    Write Review →
+                  </span>
+                </Link>
+              )}
             </section>
           </div>
         )}
 
         {/* TAB 2: ORDER HISTORY */}
-        {activeTab === 'orders' && (
+        {effectiveTab === 'orders' && canViewOrders && (
           <section className="space-y-4">
             {loading ? (
               <p className="text-center py-12 text-neutral-400">Loading your orders…</p>
@@ -419,7 +456,7 @@ function ProfileContent() {
         )}
 
         {/* TAB 3: RESERVATIONS */}
-        {activeTab === 'reservations' && (
+        {effectiveTab === 'reservations' && canReserve && (
           <section className="space-y-4">
             {loading ? (
               <p className="text-center py-12 text-neutral-400">Loading your reservations…</p>
@@ -492,7 +529,7 @@ function ProfileContent() {
         )}
 
         {/* TAB 4: ACCOUNT & QUICK ACTIONS */}
-        {activeTab === 'actions' && (
+        {effectiveTab === 'actions' && (
           <section className="grid gap-6 md:grid-cols-2">
             <div className="rounded-2xl border border-white/10 bg-[#111010] p-6 shadow-lg space-y-4">
               <h3 className="font-serif text-xl font-bold text-white flex items-center gap-2">

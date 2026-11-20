@@ -72,8 +72,9 @@ export function AuthProvider({ children }) {
       login,
       register,
       logout,
+      refreshPermissions: loadSession,
     }),
-    [state, login, register, logout],
+    [state, login, register, logout, loadSession],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

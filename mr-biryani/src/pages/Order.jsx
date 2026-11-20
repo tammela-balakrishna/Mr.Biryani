@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowRight, Minus, Plus, ShoppingBag, Trash2, CheckCircle2 } from 'lucide-react'
 import { getCart, saveCart } from '../utils/cart'
 import { useAuth } from '../auth/AuthContext'
@@ -77,8 +77,9 @@ const submit = async (event) => {
       
       if (isStaff) {
         // WAITER: Place order directly to the branch table endpoint & unwrap standard { data } response
+        const cleanTableId = tableId && tableId !== 'null' && tableId !== 'undefined' && tableId.trim() !== '' ? tableId.trim() : null;
         const response = await api.post(`/api/v1/branches/${targetBranchId}/orders`, {
-          tableId: tableId,
+          tableId: cleanTableId,
           items: cart.map((item) => ({ 
             menuItemId: item.id, 
             quantity: item.quantity 
@@ -105,6 +106,10 @@ const submit = async (event) => {
   }
 
   const menuUrl = tableId && branchId ? `/menu?tableId=${tableId}&branchId=${branchId}` : '/menu'
+
+  if (status === 'authenticated' && !isCustomer && !isStaff) {
+    return <Navigate to="/dashboard" replace />
+  }
 
   return (
     <main className="min-h-screen bg-[#080808] text-white">

@@ -1,5 +1,6 @@
 package com.mrbiryani.floor;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.mrbiryani.authorization.BranchAccess;
@@ -50,14 +52,54 @@ public class FloorController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('PERM_tables.read')")
-    Map<String, Object> tables(@PathVariable UUID branchId) {
+    @PreAuthorize("hasAuthority('PERM_tables.read') or hasAuthority('PERM_reservations.manage_own') or hasAuthority('PERM_reservations.create')")
+    Map<String, Object> tables(
+            @PathVariable UUID branchId,
+            @RequestParam(required = false) Instant at
+    ) {
         branchAccess.require(branchId);
+
+        // Imminent reservation check: transition AVAILABLE table to RESERVED only when within 45 mins of reservation time
+        jdbc.sql("UPDATE dining_tables SET status = 'RESERVED', version = version + 1 "
+                + "WHERE id IN ("
+                + "    SELECT table_id FROM reservations "
+                + "    WHERE status = 'CONFIRMED' "
+                + "      AND branch_id = :b "
+                + "      AND table_id IS NOT NULL "
+                + "      AND starts_at >= now() - interval '15 minutes' "
+                + "      AND starts_at <= now() + interval '45 minutes' "
+                + ") AND status = 'AVAILABLE'")
+                .param("b", branchId).update();
+
+        Instant targetInstant = at != null ? at : Instant.now();
+        java.sql.Timestamp targetTs = java.sql.Timestamp.from(targetInstant);
+
         return Map.of("data", jdbc.sql("SELECT t.id, t.label, t.capacity, t.status, u.full_name AS waiter, "
-                + "u.id AS waiter_user_id "
+                + "u.id AS waiter_user_id, "
+                + "r.guest_name AS reservation_guest, r.starts_at AS reservation_time, "
+                + "r.party_size AS reservation_party_size, r.status AS reservation_status, "
+                + "CASE WHEN slot_res.id IS NOT NULL THEN true ELSE false END AS is_slot_reserved, "
+                + "slot_res.guest_name AS slot_guest, slot_res.starts_at AS slot_starts_at "
                 + "FROM dining_tables t LEFT JOIN table_assignments a ON a.table_id = t.id AND a.active "
-                + "LEFT JOIN users u ON u.id = a.waiter_user_id WHERE t.branch_id = :b ORDER BY t.label")
-                .param("b", branchId).query().listOfRows());
+                + "LEFT JOIN users u ON u.id = a.waiter_user_id "
+                + "LEFT JOIN LATERAL ("
+                + "    SELECT guest_name, starts_at, party_size, status FROM reservations "
+                + "    WHERE table_id = t.id AND status IN ('CONFIRMED', 'REQUESTED') "
+                + "      AND starts_at >= (now() - interval '30 minutes') "
+                + "      AND starts_at < (now() + interval '24 hours') "
+                + "    ORDER BY starts_at ASC LIMIT 1"
+                + ") r ON true "
+                + "LEFT JOIN LATERAL ("
+                + "    SELECT id, guest_name, starts_at FROM reservations "
+                + "    WHERE table_id = t.id AND status IN ('CONFIRMED', 'REQUESTED', 'CHECKED_IN') "
+                + "      AND starts_at >= (:targetTs::timestamp with time zone - interval '45 minutes') "
+                + "      AND starts_at <= (:targetTs::timestamp with time zone + interval '45 minutes') "
+                + "    ORDER BY starts_at ASC LIMIT 1"
+                + ") slot_res ON true "
+                + "WHERE t.branch_id = :b ORDER BY t.label")
+                .param("b", branchId)
+                .param("targetTs", targetTs)
+                .query().listOfRows());
     }
 
     /** Active waiters in this branch, for assigning tables. Needs only the floor-assignment permission, not staff access. */

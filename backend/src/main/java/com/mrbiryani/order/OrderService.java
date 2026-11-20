@@ -259,6 +259,11 @@ public class OrderService {
 
         saveItems(orderId, calculated.rows());
 
+        if (tableId != null) {
+            jdbc.sql("UPDATE dining_tables SET status = 'OCCUPIED', version = version + 1 WHERE id = :tid AND branch_id = :bid")
+                    .param("tid", tableId).param("bid", branchId).update();
+        }
+
         orders.insertHistory(
                 orderId,
                 null,
@@ -412,6 +417,17 @@ public class OrderService {
             throw ApiException.conflict(
                     "Cannot move order from " + row.status() + " to " + to
             );
+        }
+
+        if (to == OrderStatus.COMPLETED) {
+            boolean hasPaidBill = jdbc.sql(
+                    "SELECT EXISTS (SELECT 1 FROM bills WHERE order_id = :o AND status = 'PAID')"
+            ).param("o", orderId).query(Boolean.class).single();
+            if (!hasPaidBill) {
+                throw ApiException.conflict(
+                        "Cannot complete order: bill must be generated and paid first at the Cashier till"
+                );
+            }
         }
 
         if (!orders.casStatus(

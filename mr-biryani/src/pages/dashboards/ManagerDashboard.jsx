@@ -1,22 +1,12 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Plus, Search, Utensils, Layers, Eye, EyeOff, X, Edit3 } from 'lucide-react'
 import { useAuth } from '../../auth/AuthContext'
 import { floorApi, managerApi, feedbackApi, menuApi } from '../../api/staff'
 import { useBranch, card, button, ghost, field, money, daysAgo, today, errorText, TABLE_STATUSES } from './shared'
 import { Message, Shell, Empty } from './ui'
 
-// Manager: the branch's day. "Needs attention" shows what is waiting; each tab holds one area and
-// offers add, edit and remove where the manager's permissions allow it.
-const TABS = [
-  ['overview', 'Overview'],
-  ['stock', 'Stock'],
-  ['tables', 'Tables'],
-  ['menu', 'Menu'],
-  ['spending', 'Spending & refunds'],
-  ['team', 'Team'],
-  ['feedback', 'Feedback'],
-]
-
+// Manager: the branch's day. "Needs attention" shows what is waiting; tabs and attention cards
+// are dynamically filtered to show only features permitted for the active role.
 const ROLES = ['WAITER', 'RECEPTIONIST', 'CAPTAIN', 'CASHIER', 'MANAGER']
 const STATUS_STYLE = { PENDING: 'text-[#D4A63A]', APPROVED: 'text-green-300', REJECTED: 'text-red-300' }
 const dayLabel = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString([], { weekday: 'short' })
@@ -79,47 +69,84 @@ export default function ManagerDashboard() {
   }
   const confirmThen = (question, fn) => { if (window.confirm(question)) fn() }
 
+  const availableTabs = useMemo(() => {
+    const list = [['overview', 'Overview']]
+    if (hasPermission('inventory.read') || hasPermission('inventory.update') || hasPermission('inventory.adjust') || hasPermission('inventory.create')) {
+      list.push(['stock', 'Stock'])
+    }
+    if (hasPermission('tables.read') || hasPermission('tables.allocate') || hasPermission('tables.assign')) {
+      list.push(['tables', 'Tables'])
+    }
+    if (hasPermission('menu.read') || hasPermission('menu.update') || hasPermission('menu.create')) {
+      list.push(['menu', 'Menu'])
+    }
+    if (hasPermission('expenses.read') || hasPermission('expenses.approve') || hasPermission('payments.refund.approve')) {
+      list.push(['spending', 'Spending & refunds'])
+    }
+    if (hasPermission('staff.read') || hasPermission('staff.create')) {
+      list.push(['team', 'Team'])
+    }
+    if (hasPermission('feedback.read') || hasPermission('feedback.moderate')) {
+      list.push(['feedback', 'Feedback'])
+    }
+    return list
+  }, [hasPermission])
+
+  const currentTab = availableTabs.some(([id]) => id === tab) ? tab : (availableTabs[0]?.[0] || 'overview')
+
   const lowStock = data.inventory.filter((i) => i.lowStock)
   const pendingExpenses = data.expenses.filter((e) => e.status === 'PENDING')
   const maxDay = Math.max(1, ...data.daily.map((d) => d.net))
   const menuItems = data.menu.flatMap((c) => (c.items || []).map((i) => ({ ...i, category: c.name })))
 
-  const attention = [
-    ['spending', 'Expenses to approve', pendingExpenses.length],
-    ['spending', 'Refunds to approve', data.refunds.length],
-    ['stock', 'Low-stock items', lowStock.length],
-    ['feedback', 'Reviews to publish', data.reviews.length],
-  ]
+  const attention = useMemo(() => {
+    const items = []
+    if (hasPermission('expenses.read') || hasPermission('expenses.approve')) {
+      items.push(['spending', 'Expenses to approve', pendingExpenses.length])
+    }
+    if (hasPermission('payments.refund.approve')) {
+      items.push(['spending', 'Refunds to approve', data.refunds.length])
+    }
+    if (hasPermission('inventory.read')) {
+      items.push(['stock', 'Low-stock items', lowStock.length])
+    }
+    if (hasPermission('feedback.read') || hasPermission('feedback.moderate')) {
+      items.push(['feedback', 'Reviews to publish', data.reviews.length])
+    }
+    return items
+  }, [hasPermission, pendingExpenses.length, data.refunds.length, lowStock.length, data.reviews.length])
 
   return (
     <Shell eyebrow="Branch manager" title="Manager dashboard" links={hasPermission('roles.manage') ? [['Admin', '/admin']] : []}>
       <Message text={branchError || error} />
       <Message text={notice} tone="ok" />
 
-      <section className="space-y-3">
-        <h2 className="font-serif text-xl font-bold">Needs your attention</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {attention.map(([target, label, count]) => (
-            <button key={label} onClick={() => setTab(target)}
-              className={`rounded-2xl border p-5 text-left transition-all duration-200 ${
-                count > 0 
-                  ? 'border-[#D4A63A] bg-gradient-to-br from-[#1d1610] to-[#111010] shadow-lg shadow-[#D4A63A]/10' 
-                  : 'border-white/10 bg-[#111010] hover:border-white/20'
-              }`}>
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400">{label}</p>
-                {count > 0 && <span className="h-2 w-2 rounded-full bg-[#D4A63A] animate-ping" />}
-              </div>
-              <p className={`mt-3 text-3xl font-extrabold ${count > 0 ? 'text-[#D4A63A]' : 'text-neutral-500'}`}>{count}</p>
-            </button>
-          ))}
-        </div>
-      </section>
+      {attention.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="font-serif text-xl font-bold">Needs your attention</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {attention.map(([target, label, count]) => (
+              <button key={label} onClick={() => setTab(target)}
+                className={`rounded-2xl border p-5 text-left transition-all duration-200 ${
+                  count > 0 
+                    ? 'border-[#D4A63A] bg-gradient-to-br from-[#1d1610] to-[#111010] shadow-lg shadow-[#D4A63A]/10' 
+                    : 'border-white/10 bg-[#111010] hover:border-white/20'
+                }`}>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400">{label}</p>
+                  {count > 0 && <span className="h-2 w-2 rounded-full bg-[#D4A63A] animate-ping" />}
+                </div>
+                <p className={`mt-3 text-3xl font-extrabold ${count > 0 ? 'text-[#D4A63A]' : 'text-neutral-500'}`}>{count}</p>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="rounded-2xl border border-white/10 bg-[#111010]/80 p-1.5 backdrop-blur-md">
         <nav className="flex flex-wrap gap-1.5" aria-label="Manager sections">
-          {TABS.map(([id, label]) => {
-            const isActive = tab === id
+          {availableTabs.map(([id, label]) => {
+            const isActive = currentTab === id
             return (
               <button
                 key={id}
@@ -138,9 +165,9 @@ export default function ManagerDashboard() {
         </nav>
       </div>
 
-      {tab === 'overview' ? (
+      {currentTab === 'overview' ? (
         <div className="grid gap-8 lg:grid-cols-3">
-          <section className={`${card} space-y-4 lg:col-span-2`}>
+          <section className={`${card} space-y-4 ${hasPermission('inventory.read') ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
             <div className="flex items-baseline justify-between">
               <h3 className="font-bold">Net sales, last 7 days</h3>
               <p className="text-[#D4A63A]">₹{money(data.sales?.net)}</p>
@@ -161,15 +188,17 @@ export default function ManagerDashboard() {
               <p>Net: <span className="font-bold text-[#D4A63A]">₹{money(data.sales?.net)}</span></p>
             </div>
           </section>
-          <section className={`${card} space-y-3`}>
-            <h3 className="font-bold">Low stock</h3>
-            {lowStock.map((i) => <p key={i.id} className="text-red-300">{i.name}: {Number(i.quantity)} {i.unit}</p>)}
-            {lowStock.length === 0 ? <Empty>All stock is above its reorder level.</Empty> : null}
-          </section>
+          {hasPermission('inventory.read') && (
+            <section className={`${card} space-y-3`}>
+              <h3 className="font-bold">Low stock</h3>
+              {lowStock.map((i) => <p key={i.id} className="text-red-300">{i.name}: {Number(i.quantity)} {i.unit}</p>)}
+              {lowStock.length === 0 ? <Empty>All stock is above its reorder level.</Empty> : null}
+            </section>
+          )}
         </div>
       ) : null}
 
-      {tab === 'stock' ? (
+      {currentTab === 'stock' ? (
         <div className="grid gap-8 lg:grid-cols-3">
           <section className="space-y-3 lg:col-span-2">
             {data.inventory.map((i) => editItem?.id === i.id ? (
@@ -221,7 +250,7 @@ export default function ManagerDashboard() {
         </div>
       ) : null}
 
-      {tab === 'tables' ? (
+      {currentTab === 'tables' ? (
         <div className="grid gap-8 lg:grid-cols-3">
           <section className="grid gap-4 sm:grid-cols-2 lg:col-span-2">
             {data.tables.map((t) => editTable?.id === t.id ? (
@@ -272,7 +301,7 @@ export default function ManagerDashboard() {
         </div>
       ) : null}
 
-      {tab === 'menu' ? (
+      {currentTab === 'menu' ? (
         <section className="space-y-6">
           {/* Top Bar: Title, description, and quick actions */}
           <div className="flex flex-col justify-between gap-4 rounded-2xl border border-white/10 bg-gradient-to-r from-[#171412] to-[#121110] p-6 sm:flex-row sm:items-center">
@@ -654,7 +683,7 @@ export default function ManagerDashboard() {
         </section>
       ) : null}
 
-      {tab === 'spending' ? (
+      {currentTab === 'spending' ? (
         <div className="grid gap-8 lg:grid-cols-2">
           <section className="space-y-3">
             <h3 className="font-bold">Expenses to approve</h3>
@@ -733,7 +762,7 @@ export default function ManagerDashboard() {
         </div>
       ) : null}
 
-      {tab === 'team' ? (
+      {currentTab === 'team' ? (
         <div className="grid gap-8 lg:grid-cols-2">
           <section className="space-y-3">
             <h3 className="font-bold">Staff in this branch</h3>
@@ -777,7 +806,7 @@ export default function ManagerDashboard() {
         </div>
       ) : null}
 
-      {tab === 'feedback' ? (
+      {currentTab === 'feedback' ? (
         <section className="space-y-3">
           {data.reviews.map((r) => (
             <div key={r.id} className={`${card} space-y-2`}>

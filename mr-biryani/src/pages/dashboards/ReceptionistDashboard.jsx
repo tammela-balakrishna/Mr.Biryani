@@ -6,7 +6,6 @@ import {
   UserCheck,
   CheckCircle2,
   AlertCircle,
-  Plus,
   Search,
   LayoutGrid,
   X,
@@ -97,10 +96,6 @@ export default function ReceptionistDashboard() {
   const [tableFilter, setTableFilter] = useState('ALL')
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Walk-in form state
-  const [showWalkIn, setShowWalkIn] = useState(false)
-  const [walk, setWalk] = useState({ guestName: '', partySize: '2', notes: '', tableId: '' })
-
   const load = useCallback(async () => {
     if (!branchId) return
     setLoading(true)
@@ -133,23 +128,6 @@ export default function ReceptionistDashboard() {
   }
 
   // Action handlers
-  const handleSeatWalkIn = async (e) => {
-    if (e) e.preventDefault()
-    if (!walk.guestName.trim()) return
-    await act(async () => {
-      await receptionApi.walkIn(branchId, {
-        guestName: walk.guestName.trim(),
-        partySize: Number(walk.partySize),
-        notes: walk.notes.trim() || undefined,
-      })
-      if (walk.tableId) {
-        await floorApi.setTableStatus(branchId, walk.tableId, 'OCCUPIED')
-      }
-      setWalk({ guestName: '', partySize: '2', notes: '', tableId: '' })
-      setShowWalkIn(false)
-    }, `Walk-in guest ${walk.guestName.trim()} seated successfully.`)
-  }
-
   const handleConfirm = async (r) => {
     await act(
       () => receptionApi.confirm(branchId, r.id),
@@ -173,19 +151,13 @@ export default function ReceptionistDashboard() {
     }
   }
 
-  const handleTableStatus = async (tableId, label, status) => {
-    await act(
-      () => floorApi.setTableStatus(branchId, tableId, status),
-      `Table ${label} marked as ${status}.`
-    )
-  }
-
   // Counts & Filtered Lists
   const pendingCount = rows.filter((r) => r.status === 'REQUESTED').length
   const confirmedCount = rows.filter((r) => r.status === 'CONFIRMED').length
   const checkedInCount = rows.filter((r) => r.status === 'CHECKED_IN').length
   const activeBookingsCount = rows.filter((r) => r.status !== 'CANCELLED').length
   const availableTables = tables.filter((t) => t.status === 'AVAILABLE')
+  const cleaningTables = tables.filter((t) => t.status === 'CLEANING')
 
   const filteredReservations = rows.filter((r) => {
     if (resFilter !== 'ALL' && r.status !== resFilter) return false
@@ -210,7 +182,7 @@ export default function ReceptionistDashboard() {
     <Shell
       eyebrow="Front Desk & Concierge"
       title="Reception Desk"
-      links={[['Reservations View', '/reservations']]}
+      links={hasPermission('roles.manage') ? [['Admin', '/admin']] : []}
     >
       <Message text={branchError || error} />
       <Message text={notice} tone="ok" />
@@ -262,131 +234,10 @@ export default function ReceptionistDashboard() {
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin text-[#D4A63A]' : ''}`} />
           </button>
         </div>
-
-        {/* Primary Walk-in CTA */}
-        {hasPermission('reservations.check_in') ? (
-          <button
-            onClick={() => setShowWalkIn(!showWalkIn)}
-            className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#E0B246] to-[#C39327] px-4 py-2.5 text-sm font-bold text-black shadow-lg shadow-[#D4A63A]/20 transition hover:brightness-110 active:scale-95"
-          >
-            <Plus className="h-4 w-4 stroke-[2.5]" />
-            <span>Seat Walk-in Guest</span>
-          </button>
-        ) : null}
       </section>
 
-      {/* Walk-in Seating Panel */}
-      {showWalkIn ? (
-        <section className="rounded-2xl border border-[#D4A63A]/40 bg-gradient-to-b from-[#1c1815] to-[#111010] p-6 shadow-2xl">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-[#D4A63A]" />
-              <h3 className="font-serif text-lg font-bold text-white">Seat Walk-In Guest</h3>
-            </div>
-            <button
-              onClick={() => setShowWalkIn(false)}
-              className="rounded-lg p-1 text-neutral-400 hover:text-white"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-
-          <form onSubmit={handleSeatWalkIn} className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-neutral-400">
-                  Guest Name
-                </label>
-                <input
-                  className={field}
-                  placeholder="e.g. Mr. Rajesh Kumar"
-                  value={walk.guestName}
-                  onChange={(e) => setWalk({ ...walk, guestName: e.target.value })}
-                  required
-                  autoFocus
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-neutral-400">
-                  Party Size
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    className={`${field} w-24`}
-                    inputMode="numeric"
-                    value={walk.partySize}
-                    onChange={(e) => setWalk({ ...walk, partySize: e.target.value.replace(/\D/g, '') || '1' })}
-                    aria-label="Party size"
-                  />
-                  <div className="flex flex-wrap gap-1">
-                    {['2', '4', '6', '8'].map((size) => (
-                      <button
-                        key={size}
-                        type="button"
-                        onClick={() => setWalk({ ...walk, partySize: size })}
-                        className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
-                          walk.partySize === size
-                            ? 'bg-[#D4A63A] text-black font-bold'
-                            : 'bg-white/5 text-neutral-300 hover:bg-white/10'
-                        }`}
-                      >
-                        {size}p
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-neutral-400">
-                  Assign Table (Optional)
-                </label>
-                <select
-                  className={field}
-                  value={walk.tableId}
-                  onChange={(e) => setWalk({ ...walk, tableId: e.target.value })}
-                >
-                  <option value="">— Auto / Assign later —</option>
-                  {availableTables.map((t) => (
-                    <option key={t.id} value={t.id} className="bg-neutral-900 text-white">
-                      {t.label} ({t.capacity} seats)
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="sm:col-span-2 lg:col-span-3">
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-neutral-400">
-                  Notes & Special Requests
-                </label>
-                <input
-                  className={field}
-                  placeholder="e.g. Near window, high chair needed, anniversary dinner"
-                  value={walk.notes}
-                  onChange={(e) => setWalk({ ...walk, notes: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-2">
-              <button type="button" onClick={() => setShowWalkIn(false)} className={ghost}>
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={!walk.guestName.trim()}
-                className={button}
-              >
-                Seat & Check In
-              </button>
-            </div>
-          </form>
-        </section>
-      ) : null}
-
       {/* Reception KPIs & Attention Overview */}
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <div className="rounded-2xl border border-white/10 bg-[#111010] p-5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Total Bookings</span>
@@ -424,11 +275,26 @@ export default function ReceptionistDashboard() {
 
         <div className="rounded-2xl border border-white/10 bg-[#111010] p-5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Tables Free</span>
-            <LayoutGrid className="h-4 w-4 text-[#D4A63A]" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Tables Available</span>
+            <LayoutGrid className="h-4 w-4 text-emerald-400" />
           </div>
-          <p className="mt-2 text-2xl font-bold text-[#D4A63A]">{availableTables.length}</p>
-          <p className="mt-1 text-xs text-neutral-500">Out of {tables.length} dining tables</p>
+          <p className="mt-2 text-2xl font-bold text-emerald-400">{availableTables.length}</p>
+          <p className="mt-1 text-xs text-neutral-500">Ready to seat walk-in guests</p>
+        </div>
+
+        <div className={`rounded-2xl border p-5 transition ${
+          cleaningTables.length > 0
+            ? 'border-rose-500/40 bg-rose-500/5'
+            : 'border-white/10 bg-[#111010]'
+        }`}>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Turnaround / Cleaning</span>
+            <RefreshCw className={`h-4 w-4 ${cleaningTables.length > 0 ? 'text-rose-400' : 'text-neutral-500'}`} />
+          </div>
+          <p className={`mt-2 text-2xl font-bold ${cleaningTables.length > 0 ? 'text-rose-400' : 'text-white'}`}>
+            {cleaningTables.length}
+          </p>
+          <p className="mt-1 text-xs text-neutral-500">Wiping & resetting for next guest</p>
         </div>
       </section>
 
@@ -686,27 +552,40 @@ export default function ReceptionistDashboard() {
                           </span>
                         ) : null}
                       </div>
+
+                      {/* Particular Time Reservation & Remaining Time Availability */}
+                      {t.reservation_time && (
+                        <div className="mt-2.5 rounded-lg border border-[#D4A63A]/30 bg-[#D4A63A]/10 px-2.5 py-1.5 text-xs">
+                          <p className="font-semibold text-[#E0B246] flex items-center gap-1">
+                            <Clock className="h-3.5 w-3.5" />
+                            <span>Booking: {timeOf(t.reservation_time)} ({t.reservation_guest || 'Reserved Guest'})</span>
+                          </p>
+                          <p className="text-[10px] text-neutral-400 mt-0.5">
+                            {t.status === 'AVAILABLE' ? '⚡ Available for current dining during remaining time' : 'Held for upcoming booking'}
+                          </p>
+                        </div>
+                      )}
                     </div>
 
-                    {/* Quick Status Action Controls */}
-                    {(hasPermission('tables.allocate') || hasPermission('tables.release')) ? (
-                      <div className="mt-3 border-t border-white/5 pt-2.5">
-                        <p className="mb-1 text-[10px] uppercase tracking-wider text-neutral-500 font-semibold">
-                          Change Status
-                        </p>
-                        <div className="flex flex-wrap gap-1">
-                          {TABLE_STATUSES.filter((s) => s !== t.status).map((s) => (
-                            <button
-                              key={s}
-                              className="rounded border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] font-medium text-neutral-300 transition hover:border-[#D4A63A]/40 hover:bg-[#D4A63A]/10 hover:text-[#E0B246] active:scale-95"
-                              onClick={() => handleTableStatus(t.id, t.label, s)}
-                            >
-                              {s.charAt(0) + s.slice(1).toLowerCase()}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ) : null}
+                    {/* Floor Status Indicator & Remaining Time Override */}
+                    <div className="mt-3 border-t border-white/5 pt-2">
+                      <p className="text-[11px] font-medium text-neutral-400">
+                        {t.status === 'AVAILABLE' && (t.reservation_time ? '✓ Free now (Reserved later today)' : '✓ Ready to seat incoming guests')}
+                        {t.status === 'CLEANING' && '🧹 Turnaround in progress (Supervised by Captain)'}
+                        {t.status === 'OCCUPIED' && '🍽️ Diners currently seated'}
+                        {t.status === 'RESERVED' && '📅 Reserved for scheduled booking'}
+                      </p>
+
+                      {t.status === 'RESERVED' && (
+                        <button
+                          onClick={() => act(() => floorApi.setTableStatus(branchId, t.id, 'AVAILABLE'), `${t.label} unlocked as Available for remaining orders.`)}
+                          className="mt-2 w-full rounded-lg border border-emerald-500/30 bg-emerald-500/10 py-1 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/20 active:scale-95"
+                          title="If guest has not arrived, free table for other diners during remaining time"
+                        >
+                          Make Available for Remaining Time
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )
               })}

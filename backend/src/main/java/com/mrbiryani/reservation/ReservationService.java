@@ -29,7 +29,7 @@ public class ReservationService {
     public enum Status { REQUESTED, CONFIRMED, CHECKED_IN, CANCELLED }
 
     public record Reservation(UUID id, UUID branchId, UUID customerId, String guestName, int partySize,
-            Instant startsAt, Status status, String notes) {}
+            Instant startsAt, Status status, String notes, UUID tableId, String tableLabel) {}
 
     private final JdbcClient jdbc;
     private final BranchLookup branches;
@@ -39,24 +39,58 @@ public class ReservationService {
         this.branches = branches;
     }
 
-    private static final String COLS = "id, branch_id, customer_id, guest_name, party_size, starts_at, status, notes";
+    private static final String SELECT_COLS = "SELECT r.id, r.branch_id, r.customer_id, r.guest_name, r.party_size, "
+            + "r.starts_at, r.status, r.notes, r.table_id, t.label AS table_label "
+            + "FROM reservations r LEFT JOIN dining_tables t ON t.id = r.table_id";
 
     @Transactional
     public Reservation create(UUID branchId, UUID customerId, String guestName, int partySize, Instant startsAt,
-            String notes, boolean staffBooking) {
+            String notes, boolean staffBooking, UUID tableId) {
         branches.requireActive(branchId);
         if (partySize < 1 || partySize > MAX_PARTY) throw ApiException.badRequest("Party size must be 1-" + MAX_PARTY);
         Instant now = Instant.now();
         if (startsAt == null || !startsAt.isAfter(now)) throw ApiException.badRequest("Reservation time must be in the future");
         if (startsAt.isAfter(now.plus(MAX_AHEAD))) throw ApiException.badRequest("Reservations open at most 120 days ahead");
 
+        if (tableId != null) {
+            boolean valid = jdbc.sql("SELECT EXISTS (SELECT 1 FROM dining_tables WHERE id = :t AND branch_id = :b)")
+                    .param("t", tableId).param("b", branchId).query(Boolean.class).single();
+            if (!valid) throw ApiException.badRequest("Table does not belong to this branch");
+
+            // Check 45-minute time limit buffer: ensure no other reservation is scheduled on this table within 45 minutes
+            boolean hasConflict = jdbc.sql("SELECT EXISTS ("
+                    + "SELECT 1 FROM reservations "
+                    + "WHERE table_id = :t AND branch_id = :b "
+                    + "  AND status IN ('REQUESTED', 'CONFIRMED', 'CHECKED_IN') "
+                    + "  AND starts_at >= (:at::timestamp with time zone - interval '45 minutes') "
+                    + "  AND starts_at <= (:at::timestamp with time zone + interval '45 minutes')"
+                    + ")")
+                    .param("t", tableId)
+                    .param("b", branchId)
+                    .param("at", java.sql.Timestamp.from(startsAt))
+                    .query(Boolean.class).single();
+            if (hasConflict) {
+                throw ApiException.conflict("Table is already reserved for this time slot (within 45 minutes buffer). Please choose another table or time.");
+            }
+        }
+
         UUID id = UUID.randomUUID();
         Status status = staffBooking ? Status.CONFIRMED : Status.REQUESTED;
-        jdbc.sql("INSERT INTO reservations (id, branch_id, customer_id, guest_name, party_size, starts_at, status, notes) "
-                + "VALUES (:id, :branch, :customer, :name, :size, :at, :status, :notes)")
+        jdbc.sql("INSERT INTO reservations (id, branch_id, customer_id, guest_name, party_size, starts_at, status, notes, table_id) "
+                + "VALUES (:id, :branch, :customer, :name, :size, :at, :status, :notes, :tid)")
                 .param("id", id).param("branch", branchId).param("customer", customerId).param("name", guestName.trim())
                 .param("size", partySize).param("at", java.sql.Timestamp.from(startsAt))
-                .param("status", status.name()).param("notes", notes).update();
+                .param("status", status.name()).param("notes", notes).param("tid", tableId).update();
+
+        // If table is assigned and confirmed, update table status to RESERVED only if within 45 minutes of reservation time!
+        if (tableId != null && status == Status.CONFIRMED) {
+            Instant bufferTime = Instant.now().plus(Duration.ofMinutes(45));
+            if (!startsAt.isAfter(bufferTime)) {
+                jdbc.sql("UPDATE dining_tables SET status = 'RESERVED', version = version + 1 WHERE id = :tid")
+                        .param("tid", tableId).update();
+            }
+        }
+
         return get(id);
     }
 
@@ -85,17 +119,17 @@ public class ReservationService {
     }
 
     public Optional<Reservation> find(UUID id) {
-        return jdbc.sql("SELECT " + COLS + " FROM reservations WHERE id = :id").param("id", id).query(this::map).optional();
+        return jdbc.sql(SELECT_COLS + " WHERE r.id = :id").param("id", id).query(this::map).optional();
     }
 
     public List<Reservation> forCustomer(UUID customerId) {
-        return jdbc.sql("SELECT " + COLS + " FROM reservations WHERE customer_id = :c ORDER BY starts_at DESC LIMIT 100")
+        return jdbc.sql(SELECT_COLS + " WHERE r.customer_id = :c ORDER BY r.starts_at DESC LIMIT 100")
                 .param("c", customerId).query(this::map).list();
     }
 
     public List<Reservation> forBranch(UUID branchId, Instant from, Instant to) {
-        return jdbc.sql("SELECT " + COLS + " FROM reservations WHERE branch_id = :b AND starts_at >= :from AND starts_at < :to "
-                + "ORDER BY starts_at LIMIT 500")
+        return jdbc.sql(SELECT_COLS + " WHERE r.branch_id = :b AND r.starts_at >= :from AND r.starts_at < :to "
+                + "ORDER BY r.starts_at LIMIT 500")
                 .param("b", branchId).param("from", java.sql.Timestamp.from(from)).param("to", java.sql.Timestamp.from(to))
                 .query(this::map).list();
     }
@@ -111,12 +145,33 @@ public class ReservationService {
                 + "WHERE id = :id AND status = :from")
                 .param("to", to.name()).param("id", id).param("from", from.name()).update();
         if (rows != 1) throw ApiException.conflict("Reservation was changed by someone else; reload and try again");
+
+        // Automatically update table status based on reservation state change
+        if (current.tableId() != null) {
+            if (to == Status.CANCELLED) {
+                jdbc.sql("UPDATE dining_tables SET status = 'AVAILABLE', version = version + 1 WHERE id = :tid")
+                        .param("tid", current.tableId()).update();
+            } else if (to == Status.CHECKED_IN) {
+                jdbc.sql("UPDATE dining_tables SET status = 'OCCUPIED', version = version + 1 WHERE id = :tid")
+                        .param("tid", current.tableId()).update();
+            } else if (to == Status.CONFIRMED) {
+                // If the booking is within the next 45 minutes, mark table RESERVED immediately.
+                // If it is in the future (remaining time), keep table AVAILABLE so it can be utilized!
+                Instant bufferTime = Instant.now().plus(java.time.Duration.ofMinutes(45));
+                if (!current.startsAt().isAfter(bufferTime)) {
+                    jdbc.sql("UPDATE dining_tables SET status = 'RESERVED', version = version + 1 WHERE id = :tid")
+                            .param("tid", current.tableId()).update();
+                }
+            }
+        }
+
         return get(id);
     }
 
     private Reservation map(java.sql.ResultSet rs, int i) throws java.sql.SQLException {
         return new Reservation(rs.getObject("id", UUID.class), rs.getObject("branch_id", UUID.class),
                 rs.getObject("customer_id", UUID.class), rs.getString("guest_name"), rs.getInt("party_size"),
-                rs.getTimestamp("starts_at").toInstant(), Status.valueOf(rs.getString("status")), rs.getString("notes"));
+                rs.getTimestamp("starts_at").toInstant(), Status.valueOf(rs.getString("status")),
+                rs.getString("notes"), rs.getObject("table_id", UUID.class), rs.getString("table_label"));
     }
 }

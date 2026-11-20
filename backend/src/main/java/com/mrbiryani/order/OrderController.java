@@ -120,9 +120,9 @@ public class OrderController {
                 .body(Map.of("data", result.order()));
     }
 
-    // Customer views their orders.
+    // Customer views their orders, or staff views table/counter orders they placed.
     @GetMapping("/orders")
-    @PreAuthorize("hasAuthority('PERM_orders.read_own')")
+    @PreAuthorize("hasAuthority('PERM_orders.read_own') or hasAuthority('PERM_orders.read')")
     public List<OrderView> mine() {
         return orders.listForCustomer(branchAccess.currentUserId());
     }
@@ -197,7 +197,7 @@ public class OrderController {
 
         return orders.listForBranch(
                 branchId,
-                status == null ? null : parse(status)
+                parse(status)
         );
     }
 
@@ -219,6 +219,9 @@ public class OrderController {
     }
 
     private static OrderStatus parse(String value) {
+        if (value == null || value.isBlank() || "ALL".equalsIgnoreCase(value.trim()) || "UNDEFINED".equalsIgnoreCase(value.trim()) || "NULL".equalsIgnoreCase(value.trim())) {
+            return null;
+        }
         try {
             return OrderStatus.valueOf(value.trim().toUpperCase());
         } catch (IllegalArgumentException e) {

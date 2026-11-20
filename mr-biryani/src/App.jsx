@@ -63,8 +63,8 @@ function App() {
             <Route path="/branches" element={<Branches />} />
             <Route path="/reviews" element={<Reviews />} />
             <Route path="/profile" element={<Profile />} />
-            <Route path="/orders" element={<OrderHistory />} />
-            <Route path="/reservations" element={<Reservations />} />
+            <Route path="/orders" element={<ProtectedRoute anyOf={['orders.read_own', 'orders.read']}><OrderHistory /></ProtectedRoute>} />
+            <Route path="/reservations" element={<ProtectedRoute anyOf={['reservations.manage_own', 'reservations.create']}><Reservations /></ProtectedRoute>} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/staff" element={<Navigate to="/dashboard" replace />} />
             <Route path="/waiter" element={<Navigate to="/dashboard" replace />} />

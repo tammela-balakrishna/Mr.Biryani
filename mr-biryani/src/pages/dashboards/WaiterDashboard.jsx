@@ -82,6 +82,7 @@ export default function WaiterDashboard() {
         <Section title="Orders to move along">
           {orders.map((o) => {
             const step = ORDER_NEXT[o.status]
+            const isServed = o.status === 'SERVED'
             return (
               <div key={o.id} className={card}>
                 <div className="flex justify-between">
@@ -94,6 +95,12 @@ export default function WaiterDashboard() {
                 {step && hasPermission('orders.update') ? (
                   <button className={`${button} mt-3`} onClick={() => advance(o)}>{step.label}</button>
                 ) : null}
+                {isServed && (
+                  <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-300">
+                    <span>🍽️ Food Served</span>
+                    <span className="text-neutral-400">· Awaiting Bill & Payment (Cashier)</span>
+                  </div>
+                )}
               </div>
             )
           })}

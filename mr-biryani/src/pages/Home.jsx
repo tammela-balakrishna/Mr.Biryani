@@ -24,6 +24,7 @@ import { addToCart, getCart } from '../utils/cart'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { MotionStyles, Reveal, SafeImg } from '../components/Motion'
+import { DEFAULT_MENU } from '../data/menuData'
 
 /* ---------- DATA & IMAGES ---------- */
 
@@ -74,46 +75,6 @@ const promises = [
   },
 ]
 
-const DEFAULT_MENU = [
-  {
-    id: 'biryani-serve-for-one',
-    name: 'Biryani (Serve for One)',
-    items: [
-      { id: '88d525d0-1bac-1195-692e-6c3c017e4801', name: 'Hyderabadi Dum Biryani', price: 170, description: 'Traditional slow dum-cooked chicken with fragrant aged basmati rice and royal spices.', available: true },
-      { id: 'mbs-1', name: 'Mr.Biryani Special', price: 200, description: 'Chef special boneless spicy chicken biryani infused with Andhra chili aroma.', available: true },
-      { id: '3d91121b-b7db-3356-afb3-ab28af11b0ca', name: 'Fry-Piece Chicken Biryani', price: 180, description: 'Crispy fried Andhra spiced chicken pieces layered over steaming biryani rice.', available: true },
-      { id: 'gcb-1', name: 'Guntur Chicken Biryani', price: 180, description: 'Fiery red chili marinade with authentic Guntur regional spices.', available: true },
-      { id: 'ncb-1', name: 'Nellore Chicken Biryani', price: 180, description: 'Coastal Andhra delicacy cooked with tangy gongura and hand-pounded spices.', available: true },
-      { id: 'mb-1', name: 'Mutton Biryani', price: 240, description: 'Tender baby mutton pieces marinated in rich curd and spices, slow dum-cooked.', available: true },
-      { id: 'pb-1', name: 'Panner Biryani', price: 160, description: 'Fresh malai paneer cubes tossed in rich biryani gravy and aromatic rice.', available: true },
-    ],
-  },
-  {
-    id: 'non-veg-starters',
-    name: 'Non-Veg Starters',
-    items: [
-      { id: 'acf-1', name: 'Andhra Chicken Fry', price: 180, description: 'Deep-fried chicken sauteed with curry leaves, green chilies, and crushed pepper.', available: true },
-      { id: 'gcf-1', name: 'Guntur Chicken Fry', price: 180, description: 'Hot and spicy roasted chicken flavored with authentic Guntur red chilies.', available: true },
-      { id: 'ncf-1', name: 'Nellore Chicken Fry', price: 180, description: 'Coastal Andhra special spiced chicken with intense garlic and pepper tempering.', available: true },
-      { id: 'cgr-1', name: 'Chicken Ghee Roast', price: 180, description: 'Slow-roasted chicken in pure desi ghee with a rich tangy masala paste.', available: true },
-      { id: 'amf-1', name: 'Andhra Mutton Fry', price: 240, description: 'Tender succulent mutton pieces dry roasted with caramelized onions and Andhra spices.', available: true },
-      { id: 'mpd-1', name: 'Mutton Pepper Dry', price: 240, description: 'Crushed black pepper and roasted spices coating soft boneless mutton.', available: true },
-      { id: 'aff-1', name: 'Andhra Fish Fry', price: 220, description: 'Crispy pan-fried fish fillets coated with traditional Andhra spice marinade.', available: true },
-      { id: 'pgr-1', name: 'Prawns Ghee Roast', price: 240, description: 'Juicy prawns tossed in aromatic ghee and fiery Kundapur-style masala.', available: true },
-    ],
-  },
-  {
-    id: 'family-pack-biryani',
-    name: 'Family Pack Biryani (Serve for 3 to 4 Persons)',
-    items: [
-      { id: 'fp-hdb', name: 'Hyderabadi Dum Biryani (Family)', price: 460, description: 'Generous feast of Hyderabadi dum biryani served with raita and mirchi ka salan.', available: true },
-      { id: 'fp-mbs', name: 'Mr.Biryani Special (Family)', price: 550, description: 'Large portion of chef special chicken biryani perfect for 3 to 4 people.', available: true },
-      { id: 'fp-fpb', name: 'Fry-Piece Chicken Biryani (Family)', price: 490, description: 'Heaping portions of biryani topped with double spicy fry pieces.', available: true },
-      { id: 'fp-mb', name: 'Mutton Biryani (Family)', price: 670, description: 'Generous royal mutton biryani prepared with choice cuts and saffron rice.', available: true },
-    ],
-  },
-]
-
 const imageFor = (categoryName) => {
   if (/family/i.test(categoryName)) return IMG.family
   if (/starter/i.test(categoryName)) return IMG.starters
@@ -122,7 +83,7 @@ const imageFor = (categoryName) => {
 
 export default function Home({ initialSection }) {
   const navigate = useNavigate()
-  const { hasPermission } = useAuth()
+  const { user, hasPermission } = useAuth()
   const [searchParams] = useSearchParams()
   const tableId = searchParams.get('tableId')
   const branchId = searchParams.get('branchId')
@@ -743,13 +704,15 @@ export default function Home({ initialSection }) {
 
               {/* Action Buttons */}
               <div className="flex flex-wrap items-center gap-3">
-                <Link
-                  to="/reservations"
-                  className="inline-flex items-center gap-2 rounded-xl bg-[#D4A63A] px-6 py-3 text-sm font-bold text-black transition duration-300 hover:bg-[#E8BD57] hover:shadow-lg hover:shadow-[#D4A63A]/20 active:scale-95"
-                >
-                  <CalendarDays size={16} />
-                  <span>Reserve a Table</span>
-                </Link>
+                {(!user || hasPermission('reservations.manage_own') || hasPermission('reservations.create')) && (
+                  <Link
+                    to="/reservations"
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#D4A63A] px-6 py-3 text-sm font-bold text-black transition duration-300 hover:bg-[#E8BD57] hover:shadow-lg hover:shadow-[#D4A63A]/20 active:scale-95"
+                  >
+                    <CalendarDays size={16} />
+                    <span>Reserve a Table</span>
+                  </Link>
+                )}
                 <button
                   onClick={() => scrollToSection('menu')}
                   className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-6 py-3 text-sm font-semibold text-neutral-200 hover:bg-white/10 active:scale-95"

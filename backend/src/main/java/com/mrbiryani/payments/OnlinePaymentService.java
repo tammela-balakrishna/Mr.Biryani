@@ -120,6 +120,29 @@ public class OnlinePaymentService {
         BigDecimal total = jdbc.sql("SELECT total FROM bills WHERE id = :b").param("b", billId).query(BigDecimal.class).single();
         if (netPaid(billId).compareTo(total) >= 0) {
             jdbc.sql("UPDATE bills SET status = 'PAID' WHERE id = :b").param("b", billId).update();
+            var orderRow = jdbc.sql("SELECT o.id, o.status, o.table_id FROM orders o JOIN bills b ON b.order_id = o.id WHERE b.id = :b")
+                    .param("b", billId)
+                    .query((rs, i) -> new Object[] {
+                            rs.getObject("id", UUID.class),
+                            rs.getString("status"),
+                            rs.getObject("table_id", UUID.class)
+                    })
+                    .optional();
+            if (orderRow.isPresent()) {
+                UUID orderId = (UUID) orderRow.get()[0];
+                String fromStatus = (String) orderRow.get()[1];
+                UUID tableId = (UUID) orderRow.get()[2];
+                jdbc.sql("UPDATE orders SET status = 'COMPLETED', updated_at = now() WHERE id = :oid").param("oid", orderId).update();
+                jdbc.sql("INSERT INTO order_status_history (id, order_id, from_status, to_status, actor_id, created_at) "
+                        + "VALUES (:hid, :oid, :from, 'COMPLETED', :actor, now())")
+                        .param("hid", UUID.randomUUID()).param("oid", orderId).param("from", fromStatus).param("actor", session[1]).update();
+                if (tableId != null) {
+                    jdbc.sql("UPDATE dining_tables SET status = 'AVAILABLE', version = version + 1 WHERE id = :tid")
+                            .param("tid", tableId).update();
+                    jdbc.sql("UPDATE table_assignments SET active = false WHERE table_id = :tid")
+                            .param("tid", tableId).update();
+                }
+            }
         }
         return "applied";
     }

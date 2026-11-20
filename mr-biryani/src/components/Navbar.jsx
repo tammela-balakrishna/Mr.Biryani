@@ -37,6 +37,8 @@ function Navbar() {
 
   const isAuthed = status === 'authenticated'
   const firstName = user?.fullName?.split(' ')[0]
+  const canReserve = !isAuthed || hasPermission('reservations.manage_own') || hasPermission('reservations.create')
+  const visibleNavLinks = navLinks.filter(([, path]) => path !== '/reservations' || canReserve)
 
   const accountLinks = (
     <>
@@ -58,7 +60,7 @@ function Navbar() {
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8" aria-label="Main navigation">
         <Brand to="/" compact={scrolled} showText tone="dark" className="shrink-0" />
         <div className="hidden items-center gap-5 xl:flex">
-          {navLinks.map(([name, path]) => (
+          {visibleNavLinks.map(([name, path]) => (
             <NavLink key={path} to={path} end={path === '/'} className={({ isActive }) => 'text-sm font-semibold transition ' + (isActive ? 'text-[#D4A63A]' : 'text-neutral-300 hover:text-[#D4A63A]')}>{name}</NavLink>
           ))}
         </div>
@@ -84,7 +86,7 @@ function Navbar() {
       <div className={'grid overflow-hidden bg-[#101010] transition-all lg:hidden ' + (open ? 'grid-rows-[1fr] border-t border-white/10' : 'grid-rows-[0fr]')}>
         <div className="overflow-hidden">
           <div className="flex flex-col gap-1 px-5 py-5">
-            {navLinks.map(([name, path]) => (
+            {visibleNavLinks.map(([name, path]) => (
               <NavLink key={path} to={path} end={path === '/'} onClick={() => setOpen(false)} className={({ isActive }) => 'rounded-lg px-4 py-3 text-sm font-semibold ' + (isActive ? 'bg-[#321010] text-[#D4A63A]' : 'text-neutral-300')}>{name}</NavLink>
             ))}
             <Link to="/order" onClick={() => setOpen(false)} className="flex items-center gap-2 px-4 py-3 text-sm text-neutral-300"><ShoppingBag size={17} />Cart ({count})</Link>

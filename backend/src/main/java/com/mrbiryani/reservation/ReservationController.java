@@ -39,7 +39,8 @@ public class ReservationController {
             @NotNull @Min(1) @Max(20) Integer partySize,
             @NotNull Instant startsAt,
             @Size(max = 120) String guestName,
-            @Size(max = 500) String notes) {}
+            @Size(max = 500) String notes,
+            UUID tableId) {}
 
     private final ReservationService reservations;
     private final BranchAccess branchAccess;
@@ -63,12 +64,12 @@ public class ReservationController {
                 throw ApiException.badRequest("guestName is required for staff bookings");
             }
             Reservation r = reservations.create(branchId, null, body.guestName(), body.partySize(), body.startsAt(),
-                    body.notes(), true);
+                    body.notes(), true, body.tableId());
             return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("data", r));
         }
         // Customers book only as themselves, at any active branch.
         String name = authNameOrGuest(body.guestName());
-        Reservation r = reservations.create(branchId, me, name, body.partySize(), body.startsAt(), body.notes(), false);
+        Reservation r = reservations.create(branchId, me, name, body.partySize(), body.startsAt(), body.notes(), false, body.tableId());
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("data", r));
     }
 
