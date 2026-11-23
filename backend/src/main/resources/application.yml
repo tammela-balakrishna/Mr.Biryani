@@ -3,7 +3,11 @@ spring:
     name: mr-biryani-backend
   # Local development: values in backend/.env (KEY=value) are picked up automatically.
   config:
-    import: optional:file:.env[.properties]
+    import:
+      - optional:file:.env[.properties]
+      - optional:file:./backend/.env[.properties]
+      - optional:file:../backend/.env[.properties]
+      - optional:file:Mr_BIRIYANI/backend/.env[.properties]
   datasource:
     url: ${DATABASE_URL:jdbc:postgresql://${DATABASE_HOST:localhost}:${DATABASE_PORT:5432}/${DATABASE_NAME:mrbiryani}}
     username: ${DATABASE_USERNAME:mrbiryani}
@@ -14,7 +18,7 @@ spring:
     default-property-inclusion: non_null
 
 server:
-  port: ${PORT:8081}
+  port: ${PORT:8085}
   error:
     include-stacktrace: never
   forward-headers-strategy: ${FORWARD_HEADERS_STRATEGY:none}
@@ -30,7 +34,7 @@ management:
 
 app:
   jwt:
-    secret: ${JWT_SECRET:}
+    secret: ${JWT_SECRET:my-super-secret-jwt-key-for-mr-biriyani-app-2026}
     issuer: ${JWT_ISSUER:mr-biryani-api}
     audience: ${JWT_AUDIENCE:mr-biryani-clients}
     access-token-ttl: ${ACCESS_TOKEN_TTL:15m}

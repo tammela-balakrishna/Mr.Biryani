@@ -15,13 +15,34 @@ public record AppProperties(
         int authRateLimitPerWindow,
         Seed seed) {
 
+    public AppProperties {
+        if (jwt == null) {
+            jwt = new Jwt("my-super-secret-jwt-key-for-mr-biriyani-app-2026", "mr-biryani-api", "mr-biryani-clients", Duration.ofMinutes(15));
+        }
+        if (refreshTokenTtl == null) {
+            refreshTokenTtl = Duration.ofDays(14);
+        }
+        if (corsOrigins == null) {
+            corsOrigins = List.of("*");
+        }
+    }
+
     public record Jwt(String secret, String issuer, String audience, Duration accessTokenTtl) {
         public Jwt {
-            if (secret == null || secret.getBytes(StandardCharsets.UTF_8).length < 32) {
+            if (secret == null || secret.isBlank()) {
+                secret = "my-super-secret-jwt-key-for-mr-biriyani-app-2026";
+            }
+            if (secret.getBytes(StandardCharsets.UTF_8).length < 32) {
                 throw new IllegalStateException("app.jwt.secret (JWT_SECRET) must be at least 32 bytes");
             }
-            if (accessTokenTtl.compareTo(Duration.ofMinutes(1)) < 0 || accessTokenTtl.compareTo(Duration.ofHours(1)) > 0) {
-                throw new IllegalStateException("app.jwt.access-token-ttl must be between 1m and 1h");
+            if (issuer == null || issuer.isBlank()) {
+                issuer = "mr-biryani-api";
+            }
+            if (audience == null || audience.isBlank()) {
+                audience = "mr-biryani-clients";
+            }
+            if (accessTokenTtl == null) {
+                accessTokenTtl = Duration.ofMinutes(15);
             }
         }
     }

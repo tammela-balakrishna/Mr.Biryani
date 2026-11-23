@@ -1,10 +1,15 @@
 import { Redirect } from 'expo-router';
 import { useAuth } from '../auth/AuthProvider';
+import { getPrimaryStaffTab } from '../authorization/permissions';
 
-// Staff land on the floor; customers land on the menu; signed-out visitors go to sign-in.
+// Role-based landing: Staff land on their designated operational dashboard;
+// customers and guests land on the Royal Andhra home.
 export default function Index() {
-  const { status, isStaff } = useAuth();
+  const { status, isStaff, roles } = useAuth();
   if (status === 'loading') return null;
-  if (status !== 'authenticated') return <Redirect href="/login" />;
-  return <Redirect href={isStaff ? '/floor' : '/menu'} />;
+  if (status === 'authenticated' && isStaff) {
+    const targetTab = getPrimaryStaffTab(roles);
+    return <Redirect href={`/${targetTab}` as any} />;
+  }
+  return <Redirect href="/home" />;
 }

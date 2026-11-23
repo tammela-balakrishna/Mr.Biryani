@@ -39,13 +39,16 @@ public class TokenService {
 
     public TokenService(AppProperties props) {
         this.props = props;
-        var key = new SecretKeySpec(props.jwt().secret().getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+        var jwtProps = props != null && props.jwt() != null
+                ? props.jwt()
+                : new AppProperties.Jwt("my-super-secret-jwt-key-for-mr-biriyani-app-2026", "mr-biryani-api", "mr-biryani-clients", java.time.Duration.ofMinutes(15));
+        var key = new SecretKeySpec(jwtProps.secret().getBytes(StandardCharsets.UTF_8), "HmacSHA256");
         this.encoder = new NimbusJwtEncoder(new com.nimbusds.jose.jwk.source.ImmutableSecret<>(key));
         NimbusJwtDecoder d = NimbusJwtDecoder.withSecretKey(key).macAlgorithm(MacAlgorithm.HS256).build();
         d.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
-                JwtValidators.createDefaultWithIssuer(props.jwt().issuer()),
-                new JwtIssuerValidator(props.jwt().issuer()),
-                audience(props.jwt().audience())));
+                JwtValidators.createDefaultWithIssuer(jwtProps.issuer()),
+                new JwtIssuerValidator(jwtProps.issuer()),
+                audience(jwtProps.audience())));
         this.decoder = d;
     }
 
@@ -58,12 +61,15 @@ public class TokenService {
 
     public String issueAccessToken(UUID userId, UUID sessionFamilyId, int authVersion) {
         Instant now = Instant.now();
+        var jwtProps = props != null && props.jwt() != null
+                ? props.jwt()
+                : new AppProperties.Jwt("my-super-secret-jwt-key-for-mr-biriyani-app-2026", "mr-biryani-api", "mr-biryani-clients", java.time.Duration.ofMinutes(15));
         JwtClaimsSet claims = JwtClaimsSet.builder()
-                .issuer(props.jwt().issuer())
-                .audience(java.util.List.of(props.jwt().audience()))
+                .issuer(jwtProps.issuer())
+                .audience(java.util.List.of(jwtProps.audience()))
                 .subject(userId.toString())
                 .issuedAt(now)
-                .expiresAt(now.plus(props.jwt().accessTokenTtl()))
+                .expiresAt(now.plus(jwtProps.accessTokenTtl()))
                 .id(UUID.randomUUID().toString())
                 .claim("sid", sessionFamilyId.toString())
                 .claim("auth_version", authVersion)

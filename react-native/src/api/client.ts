@@ -1,4 +1,3 @@
-import { randomUUID } from 'expo-crypto';
 import { API_BASE_URL } from '../config/env';
 
 /** Error shape returned by the backend (`{ error: { code, message, requestId, details? } }`), or a local network error. */
@@ -115,5 +114,14 @@ function safeJson(text: string): unknown {
 
 /** A fresh idempotency key per checkout attempt; retries of the same attempt must reuse it. */
 export function newIdempotencyKey(): string {
-  return randomUUID();
+  if (typeof globalThis !== 'undefined' && globalThis.crypto?.randomUUID) {
+    try {
+      return globalThis.crypto.randomUUID();
+    } catch {}
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
 }

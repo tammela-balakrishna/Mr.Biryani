@@ -3,7 +3,7 @@ import { setAccessToken, setSessionHandlers } from '../api/client';
 import { authApi } from '../api/endpoints';
 import type { Session, TokenResponse } from '../api/contracts';
 import { clearRefreshToken, readRefreshToken, writeRefreshToken } from './tokenStore';
-import { hasPermission, hasAnyPermission, isStaffSession } from '../authorization/permissions';
+import { hasPermission, hasAnyPermission, isStaffSession, AppRole, SYSTEM_DEFAULTS } from '../authorization/permissions';
 
 type AuthState =
   | { status: 'loading' }
@@ -11,6 +11,9 @@ type AuthState =
   | { status: 'authenticated'; session: Session };
 
 type AuthValue = AuthState & {
+  user: Session['user'] | null;
+  roles: readonly string[];
+  permissions: readonly string[];
   hasPermission: (key: string) => boolean;
   hasAnyPermission: (keys: string[]) => boolean;
   isStaff: boolean;
@@ -73,11 +76,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [adopt, anonymous, refreshAccess]);
 
   const login = useCallback(async (email: string, password: string) => {
-    await adopt(await authApi.login(email.trim(), password));
+    const tokens = await authApi.login(email.trim(), password);
+    await adopt(tokens);
   }, [adopt]);
 
   const register = useCallback(async (input: { fullName: string; email: string; phone?: string; password: string }) => {
-    await adopt(await authApi.register(input));
+    const tokens = await authApi.register(input);
+    await adopt(tokens);
   }, [adopt]);
 
   const logout = useCallback(async () => {
@@ -90,12 +95,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [anonymous]);
 
   const value = useMemo<AuthValue>(() => {
+    const user = state.status === 'authenticated' ? state.session.user : null;
+    const roles = state.status === 'authenticated' ? state.session.roles : [];
     const permissions = state.status === 'authenticated' ? state.session.permissions : [];
     return {
       ...state,
+      user,
+      roles,
+      permissions,
       hasPermission: (key) => hasPermission(permissions, key),
       hasAnyPermission: (keys) => hasAnyPermission(permissions, keys),
-      isStaff: state.status === 'authenticated' && isStaffSession(state.session.roles),
+      isStaff: isStaffSession(roles),
       login,
       register,
       logout,
